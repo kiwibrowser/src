@@ -16,14 +16,20 @@
 #define DAWNNATIVE_SHADERMODULE_H_
 
 #include "common/Constants.h"
+#include "common/ityp_array.h"
+#include "dawn_native/BindingInfo.h"
+#include "dawn_native/CachedObject.h"
 #include "dawn_native/Error.h"
+#include "dawn_native/Format.h"
 #include "dawn_native/Forward.h"
-#include "dawn_native/ObjectBase.h"
+#include "dawn_native/PerStage.h"
 
 #include "dawn_native/dawn_platform.h"
 
-#include <array>
+#include "spvc/spvc.hpp"
+
 #include <bitset>
+#include <map>
 #include <vector>
 
 namespace spirv_cross {
@@ -35,32 +41,44 @@ namespace dawn_native {
     MaybeError ValidateShaderModuleDescriptor(DeviceBase* device,
                                               const ShaderModuleDescriptor* descriptor);
 
-    class ShaderModuleBase : public ObjectBase {
+    class ShaderModuleBase : public CachedObject {
       public:
-        ShaderModuleBase(DeviceBase* device,
-                         const ShaderModuleDescriptor* descriptor,
-                         bool blueprint = false);
+        enum class Type { Undefined, Spirv, Wgsl };
+
+        ShaderModuleBase(DeviceBase* device, const ShaderModuleDescriptor* descriptor);
         ~ShaderModuleBase() override;
 
         static ShaderModuleBase* MakeError(DeviceBase* device);
 
-        void ExtractSpirvInfo(const spirv_cross::Compiler& compiler);
+        MaybeError ExtractSpirvInfo(const spirv_cross::Compiler& compiler);
 
-        struct BindingInfo {
+        struct ShaderBindingInfo : BindingInfo {
             // The SPIRV ID of the resource.
             uint32_t id;
             uint32_t base_type_id;
-            dawn::BindingType type;
-            bool used = false;
+
+          private:
+            // Disallow access to unused members.
+            using BindingInfo::hasDynamicOffset;
+            using BindingInfo::visibility;
         };
-        using ModuleBindingInfo =
-            std::array<std::array<BindingInfo, kMaxBindingsPerGroup>, kMaxBindGroups>;
+
+        using BindingInfoMap = std::map<BindingNumber, ShaderBindingInfo>;
+        using ModuleBindingInfo = ityp::array<BindGroupIndex, BindingInfoMap, kMaxBindGroups>;
 
         const ModuleBindingInfo& GetBindingInfo() const;
         const std::bitset<kMaxVertexAttributes>& GetUsedVertexAttributes() const;
-        dawn::ShaderStage GetExecutionModel() const;
+        SingleShaderStage GetExecutionModel() const;
 
-        bool IsCompatibleWithPipelineLayout(const PipelineLayoutBase* layout);
+        // An array to record the basic types (float, int and uint) of the fragment shader outputs
+        // or Format::Type::Other means the fragment shader output is unused.
+        using FragmentOutputBaseTypes = std::array<Format::Type, kMaxColorAttachments>;
+        const FragmentOutputBaseTypes& GetFragmentOutputBaseTypes() const;
+
+        MaybeError ValidateCompatibilityWithPipelineLayout(const PipelineLayoutBase* layout) const;
+
+        RequiredBufferSizes ComputeRequiredBufferSizesForLayout(
+            const PipelineLayoutBase* layout) const;
 
         // Functors necessary for the unordered_set<ShaderModuleBase*>-based cache.
         struct HashFunc {
@@ -70,19 +88,40 @@ namespace dawn_native {
             bool operator()(const ShaderModuleBase* a, const ShaderModuleBase* b) const;
         };
 
+        shaderc_spvc::Context* GetContext();
+        const std::vector<uint32_t>& GetSpirv() const;
+
+      protected:
+        static MaybeError CheckSpvcSuccess(shaderc_spvc_status status, const char* error_msg);
+        shaderc_spvc::CompileOptions GetCompileOptions() const;
+        MaybeError InitializeBase();
+
+        shaderc_spvc::Context mSpvcContext;
+
       private:
         ShaderModuleBase(DeviceBase* device, ObjectBase::ErrorTag tag);
 
-        bool IsCompatibleWithBindGroupLayout(size_t group, const BindGroupLayoutBase* layout);
+        MaybeError ValidateCompatibilityWithBindGroupLayout(
+            BindGroupIndex group,
+            const BindGroupLayoutBase* layout) const;
 
-        // TODO(cwallez@chromium.org): The code is only stored for deduplication. We could maybe
-        // store a cryptographic hash of the code instead?
-        std::vector<uint32_t> mCode;
-        bool mIsBlueprint = false;
+        std::vector<uint64_t> GetBindGroupMinBufferSizes(const BindingInfoMap& shaderMap,
+                                                         const BindGroupLayoutBase* layout) const;
+
+        // Different implementations reflection into the shader depending on
+        // whether using spvc, or directly accessing spirv-cross.
+        MaybeError ExtractSpirvInfoWithSpvc();
+        MaybeError ExtractSpirvInfoWithSpirvCross(const spirv_cross::Compiler& compiler);
+
+        Type mType;
+        std::vector<uint32_t> mSpirv;
+        std::string mWgsl;
 
         ModuleBindingInfo mBindingInfo;
         std::bitset<kMaxVertexAttributes> mUsedVertexAttributes;
-        dawn::ShaderStage mExecutionModel;
+        SingleShaderStage mExecutionModel;
+
+        FragmentOutputBaseTypes mFragmentOutputFormatBaseTypes;
     };
 
 }  // namespace dawn_native

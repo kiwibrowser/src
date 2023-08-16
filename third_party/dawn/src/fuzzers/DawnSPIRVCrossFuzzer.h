@@ -16,7 +16,7 @@
 #include <functional>
 #include <vector>
 
-#include "shaderc/spvc.hpp"
+#include "spvc/spvc.hpp"
 
 namespace DawnSPIRVCrossFuzzer {
 

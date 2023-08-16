@@ -25,25 +25,27 @@
 
 namespace dawn_native {
 
-    static_assert(static_cast<uint32_t>(dawn::ShaderStage::Vertex) < kNumStages, "");
-    static_assert(static_cast<uint32_t>(dawn::ShaderStage::Fragment) < kNumStages, "");
-    static_assert(static_cast<uint32_t>(dawn::ShaderStage::Compute) < kNumStages, "");
+    enum class SingleShaderStage { Vertex, Fragment, Compute };
 
-    static_assert(static_cast<uint32_t>(dawn::ShaderStageBit::Vertex) ==
-                      (1 << static_cast<uint32_t>(dawn::ShaderStage::Vertex)),
+    static_assert(static_cast<uint32_t>(SingleShaderStage::Vertex) < kNumStages, "");
+    static_assert(static_cast<uint32_t>(SingleShaderStage::Fragment) < kNumStages, "");
+    static_assert(static_cast<uint32_t>(SingleShaderStage::Compute) < kNumStages, "");
+
+    static_assert(static_cast<uint32_t>(wgpu::ShaderStage::Vertex) ==
+                      (1 << static_cast<uint32_t>(SingleShaderStage::Vertex)),
                   "");
-    static_assert(static_cast<uint32_t>(dawn::ShaderStageBit::Fragment) ==
-                      (1 << static_cast<uint32_t>(dawn::ShaderStage::Fragment)),
+    static_assert(static_cast<uint32_t>(wgpu::ShaderStage::Fragment) ==
+                      (1 << static_cast<uint32_t>(SingleShaderStage::Fragment)),
                   "");
-    static_assert(static_cast<uint32_t>(dawn::ShaderStageBit::Compute) ==
-                      (1 << static_cast<uint32_t>(dawn::ShaderStage::Compute)),
+    static_assert(static_cast<uint32_t>(wgpu::ShaderStage::Compute) ==
+                      (1 << static_cast<uint32_t>(SingleShaderStage::Compute)),
                   "");
 
-    BitSetIterator<kNumStages, dawn::ShaderStage> IterateStages(dawn::ShaderStageBit stages);
-    dawn::ShaderStageBit StageBit(dawn::ShaderStage stage);
+    BitSetIterator<kNumStages, SingleShaderStage> IterateStages(wgpu::ShaderStage stages);
+    wgpu::ShaderStage StageBit(SingleShaderStage stage);
 
-    static constexpr dawn::ShaderStageBit kAllStages =
-        static_cast<dawn::ShaderStageBit>((1 << kNumStages) - 1);
+    static constexpr wgpu::ShaderStage kAllStages =
+        static_cast<wgpu::ShaderStage>((1 << kNumStages) - 1);
 
     template <typename T>
     class PerStage {
@@ -53,21 +55,21 @@ namespace dawn_native {
             mData.fill(initialValue);
         }
 
-        T& operator[](dawn::ShaderStage stage) {
+        T& operator[](SingleShaderStage stage) {
             DAWN_ASSERT(static_cast<uint32_t>(stage) < kNumStages);
             return mData[static_cast<uint32_t>(stage)];
         }
-        const T& operator[](dawn::ShaderStage stage) const {
+        const T& operator[](SingleShaderStage stage) const {
             DAWN_ASSERT(static_cast<uint32_t>(stage) < kNumStages);
             return mData[static_cast<uint32_t>(stage)];
         }
 
-        T& operator[](dawn::ShaderStageBit stageBit) {
+        T& operator[](wgpu::ShaderStage stageBit) {
             uint32_t bit = static_cast<uint32_t>(stageBit);
             DAWN_ASSERT(bit != 0 && IsPowerOfTwo(bit) && bit <= (1 << kNumStages));
             return mData[Log2(bit)];
         }
-        const T& operator[](dawn::ShaderStageBit stageBit) const {
+        const T& operator[](wgpu::ShaderStage stageBit) const {
             uint32_t bit = static_cast<uint32_t>(stageBit);
             DAWN_ASSERT(bit != 0 && IsPowerOfTwo(bit) && bit <= (1 << kNumStages));
             return mData[Log2(bit)];

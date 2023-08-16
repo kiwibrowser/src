@@ -16,6 +16,7 @@
 #define DAWNWIRE_SERVER_OBJECTSTORAGE_H_
 
 #include "dawn_wire/WireCmd_autogen.h"
+#include "dawn_wire/WireServer.h"
 
 #include <algorithm>
 #include <map>
@@ -24,9 +25,9 @@ namespace dawn_wire { namespace server {
 
     template <typename T>
     struct ObjectDataBase {
-        // The backend-provided handle and serial to this object.
+        // The backend-provided handle and generation to this object.
         T handle;
-        uint32_t serial = 0;
+        uint32_t generation = 0;
 
         // Whether this object has been allocated, used by the KnownObjects queries
         // TODO(cwallez@chromium.org): make this an internal bit vector in KnownObjects.
@@ -40,9 +41,10 @@ namespace dawn_wire { namespace server {
     enum class BufferMapWriteState { Unmapped, Mapped, MapError };
 
     template <>
-    struct ObjectData<DawnBuffer> : public ObjectDataBase<DawnBuffer> {
-        void* mappedData = nullptr;
-        size_t mappedDataSize = 0;
+    struct ObjectData<WGPUBuffer> : public ObjectDataBase<WGPUBuffer> {
+        // TODO(enga): Use a tagged pointer to save space.
+        std::unique_ptr<MemoryTransferService::ReadHandle> readHandle;
+        std::unique_ptr<MemoryTransferService::WriteHandle> writeHandle;
         BufferMapWriteState mapWriteState = BufferMapWriteState::Unmapped;
     };
 
@@ -59,7 +61,7 @@ namespace dawn_wire { namespace server {
             Data reservation;
             reservation.handle = nullptr;
             reservation.allocated = false;
-            mKnown.push_back(reservation);
+            mKnown.push_back(std::move(reservation));
         }
 
         // Get a backend objects for a given client ID.
@@ -92,10 +94,10 @@ namespace dawn_wire { namespace server {
         }
 
         // Allocates the data for a given ID and returns it.
-        // Returns nullptr if the ID is already allocated, or too far ahead.
-        // Invalidates all the Data*
+        // Returns nullptr if the ID is already allocated, or too far ahead, or if ID is 0 (ID 0 is
+        // reserved for nullptr). Invalidates all the Data*
         Data* Allocate(uint32_t id) {
-            if (id > mKnown.size()) {
+            if (id == 0 || id > mKnown.size()) {
                 return nullptr;
             }
 
@@ -104,7 +106,7 @@ namespace dawn_wire { namespace server {
             data.handle = nullptr;
 
             if (id >= mKnown.size()) {
-                mKnown.push_back(data);
+                mKnown.push_back(std::move(data));
                 return &mKnown.back();
             }
 
@@ -112,7 +114,7 @@ namespace dawn_wire { namespace server {
                 return nullptr;
             }
 
-            mKnown[id] = data;
+            mKnown[id] = std::move(data);
             return &mKnown[id];
         }
 

@@ -18,20 +18,24 @@
 #include "dawn_native/Sampler.h"
 
 #include "common/vulkan_platform.h"
-#include "dawn_native/vulkan/MemoryAllocator.h"
+#include "dawn_native/Error.h"
 
 namespace dawn_native { namespace vulkan {
 
-    class Sampler : public SamplerBase {
+    class Device;
+
+    class Sampler final : public SamplerBase {
       public:
-        Sampler(Device* device, const SamplerDescriptor* descriptor);
-        ~Sampler();
+        static ResultOrError<Sampler*> Create(Device* device, const SamplerDescriptor* descriptor);
 
         VkSampler GetHandle() const;
 
       private:
+        ~Sampler() override;
+        using SamplerBase::SamplerBase;
+        MaybeError Initialize(const SamplerDescriptor* descriptor);
+
         VkSampler mHandle = VK_NULL_HANDLE;
-        Device* mDevice = nullptr;
     };
 
 }}  // namespace dawn_native::vulkan

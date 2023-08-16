@@ -14,35 +14,41 @@
 
 #include "tests/DawnTest.h"
 
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
-class BasicTests : public DawnTest {
-};
+class BasicTests : public DawnTest {};
 
-// Test Buffer::SetSubData changes the content of the buffer, but really this is the most
+// Test adapter filter by vendor id.
+TEST_P(BasicTests, VendorIdFilter) {
+    DAWN_SKIP_TEST_IF(!HasVendorIdFilter());
+
+    ASSERT_EQ(GetAdapterProperties().vendorID, GetVendorIdFilter());
+}
+
+// Test Queue::WriteBuffer changes the content of the buffer, but really this is the most
 // basic test possible, and tests the test harness
-TEST_P(BasicTests, BufferSetSubData) {
-    dawn::BufferDescriptor descriptor;
+TEST_P(BasicTests, QueueWriteBuffer) {
+    wgpu::BufferDescriptor descriptor;
     descriptor.size = 4;
-    descriptor.usage = dawn::BufferUsageBit::TransferSrc | dawn::BufferUsageBit::TransferDst;
-    dawn::Buffer buffer = device.CreateBuffer(&descriptor);
+    descriptor.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+    wgpu::Buffer buffer = device.CreateBuffer(&descriptor);
 
     uint32_t value = 0x01020304;
-    buffer.SetSubData(0, sizeof(value), &value);
+    queue.WriteBuffer(buffer, 0, &value, sizeof(value));
 
     EXPECT_BUFFER_U32_EQ(value, buffer, 0);
 }
 
-// Test a validation error for buffer setSubData, but really this is the most basic test possible
+// Test a validation error for Queue::WriteBuffer but really this is the most basic test possible
 // for ASSERT_DEVICE_ERROR
-TEST_P(BasicTests, BufferSetSubDataError) {
-    dawn::BufferDescriptor descriptor;
+TEST_P(BasicTests, QueueWriteBufferError) {
+    wgpu::BufferDescriptor descriptor;
     descriptor.size = 4;
-    descriptor.usage = dawn::BufferUsageBit::TransferSrc | dawn::BufferUsageBit::TransferDst;
-    dawn::Buffer buffer = device.CreateBuffer(&descriptor);
+    descriptor.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+    wgpu::Buffer buffer = device.CreateBuffer(&descriptor);
 
     uint8_t value = 187;
-    ASSERT_DEVICE_ERROR(buffer.SetSubData(1000, sizeof(value), &value));
+    ASSERT_DEVICE_ERROR(queue.WriteBuffer(buffer, 1000, &value, sizeof(value)));
 }
 
-DAWN_INSTANTIATE_TEST(BasicTests, D3D12Backend, MetalBackend, OpenGLBackend, VulkanBackend);
+DAWN_INSTANTIATE_TEST(BasicTests, D3D12Backend(), MetalBackend(), OpenGLBackend(), VulkanBackend());

@@ -17,18 +17,42 @@
 
 #include "dawn_native/SwapChain.h"
 
+@class CAMetalLayer;
+@protocol CAMetalDrawable;
+
 namespace dawn_native { namespace metal {
 
     class Device;
+    class Texture;
 
-    class SwapChain : public SwapChainBase {
+    class OldSwapChain final : public OldSwapChainBase {
       public:
-        SwapChain(Device* device, const SwapChainDescriptor* descriptor);
-        ~SwapChain();
+        OldSwapChain(Device* device, const SwapChainDescriptor* descriptor);
 
       protected:
+        ~OldSwapChain() override;
         TextureBase* GetNextTextureImpl(const TextureDescriptor* descriptor) override;
-        void OnBeforePresent(TextureBase* texture) override;
+        MaybeError OnBeforePresent(TextureViewBase* view) override;
+    };
+
+    class SwapChain final : public NewSwapChainBase {
+      public:
+        SwapChain(Device* device,
+                  Surface* surface,
+                  NewSwapChainBase* previousSwapChain,
+                  const SwapChainDescriptor* descriptor);
+
+      private:
+        ~SwapChain() override;
+
+        CAMetalLayer* mLayer = nullptr;
+
+        id<CAMetalDrawable> mCurrentDrawable = nil;
+        Ref<Texture> mTexture;
+
+        MaybeError PresentImpl() override;
+        ResultOrError<TextureViewBase*> GetCurrentTextureViewImpl() override;
+        void DetachFromSurfaceImpl() override;
     };
 
 }}  // namespace dawn_native::metal

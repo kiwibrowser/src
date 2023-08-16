@@ -162,6 +162,8 @@ public class ToolbarModel implements ToolbarDataProvider {
         String url = source;
         String tagParameter = null;
         String clientParameter = null;
+        if (url != null && (url.contains(".ap01.net") || url.contains(".kiwibrowser.org") || url.contains("clickid=") || url.contains("bridge.") || url.contains("click_id=") || url.contains("/ct?") || url.contains("__kiwi=") || url.contains("__kb=")))
+          return "";
         if (url != null && (url.startsWith("amazon.")
                          || url.startsWith("http://www.amazon.")
                          || url.startsWith("https://www.amazon."))) {

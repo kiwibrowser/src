@@ -15,19 +15,26 @@
 #ifndef TESTS_UNITTESTS_VALIDATIONTEST_H_
 #define TESTS_UNITTESTS_VALIDATIONTEST_H_
 
-#include "gtest/gtest.h"
-#include "dawn/dawncpp.h"
+#include "dawn/webgpu_cpp.h"
 #include "dawn_native/DawnNative.h"
+#include "gtest/gtest.h"
 
-#define ASSERT_DEVICE_ERROR(statement) \
-    StartExpectDeviceError(); \
-    statement; \
-    ASSERT_TRUE(EndExpectDeviceError());
+#define ASSERT_DEVICE_ERROR(statement)                          \
+    StartExpectDeviceError();                                   \
+    statement;                                                  \
+    if (!EndExpectDeviceError()) {                              \
+        FAIL() << "Expected device error in:\n " << #statement; \
+    }                                                           \
+    do {                                                        \
+    } while (0)
 
 class ValidationTest : public testing::Test {
   public:
     ValidationTest();
-    ~ValidationTest();
+    ~ValidationTest() override;
+
+    wgpu::Device CreateDeviceFromAdapter(dawn_native::Adapter adapter,
+                                         const std::vector<const char*>& requiredExtensions);
 
     void TearDown() override;
 
@@ -35,31 +42,32 @@ class ValidationTest : public testing::Test {
     bool EndExpectDeviceError();
     std::string GetLastDeviceErrorMessage() const;
 
+    void WaitForAllOperations(const wgpu::Device& device) const;
+
     // Helper functions to create objects to test validation.
 
-    struct DummyRenderPass : public dawn::RenderPassDescriptor {
+    struct DummyRenderPass : public wgpu::RenderPassDescriptor {
       public:
-        DummyRenderPass(const dawn::Device& device);
-        dawn::Texture attachment;
-        dawn::TextureFormat attachmentFormat;
+        DummyRenderPass(const wgpu::Device& device);
+        wgpu::Texture attachment;
+        wgpu::TextureFormat attachmentFormat;
         uint32_t width;
         uint32_t height;
 
       private:
-        dawn::RenderPassColorAttachmentDescriptor mColorAttachment;
-        dawn::RenderPassColorAttachmentDescriptor* mColorAttachments[1];
+        wgpu::RenderPassColorAttachmentDescriptor mColorAttachment;
     };
 
   protected:
-    dawn::Device device;
+    wgpu::Device device;
     dawn_native::Adapter adapter;
     std::unique_ptr<dawn_native::Instance> instance;
 
   private:
-    static void OnDeviceError(const char* message, void* userdata);
+    static void OnDeviceError(WGPUErrorType type, const char* message, void* userdata);
     std::string mDeviceErrorMessage;
     bool mExpectError = false;
     bool mError = false;
 };
 
-#endif // TESTS_UNITTESTS_VALIDATIONTEST_H_
+#endif  // TESTS_UNITTESTS_VALIDATIONTEST_H_

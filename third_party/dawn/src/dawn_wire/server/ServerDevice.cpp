@@ -16,18 +16,60 @@
 
 namespace dawn_wire { namespace server {
 
-    void Server::ForwardDeviceError(const char* message, void* userdata) {
+    void Server::ForwardUncapturedError(WGPUErrorType type, const char* message, void* userdata) {
         auto server = static_cast<Server*>(userdata);
-        server->OnDeviceError(message);
+        server->OnUncapturedError(type, message);
     }
 
-    void Server::OnDeviceError(const char* message) {
-        ReturnDeviceErrorCallbackCmd cmd;
+    void Server::ForwardDeviceLost(const char* message, void* userdata) {
+        auto server = static_cast<Server*>(userdata);
+        server->OnDeviceLost(message);
+    }
+
+    void Server::OnUncapturedError(WGPUErrorType type, const char* message) {
+        ReturnDeviceUncapturedErrorCallbackCmd cmd;
+        cmd.type = type;
         cmd.message = message;
 
-        size_t requiredSize = cmd.GetRequiredSize();
-        char* allocatedBuffer = static_cast<char*>(GetCmdSpace(requiredSize));
-        cmd.Serialize(allocatedBuffer);
+        SerializeCommand(cmd);
+    }
+
+    void Server::OnDeviceLost(const char* message) {
+        ReturnDeviceLostCallbackCmd cmd;
+        cmd.message = message;
+
+        SerializeCommand(cmd);
+    }
+
+    bool Server::DoDevicePopErrorScope(WGPUDevice cDevice, uint64_t requestSerial) {
+        ErrorScopeUserdata* userdata = new ErrorScopeUserdata;
+        userdata->server = this;
+        userdata->requestSerial = requestSerial;
+
+        bool success = mProcs.devicePopErrorScope(cDevice, ForwardPopErrorScope, userdata);
+        if (!success) {
+            delete userdata;
+        }
+        return success;
+    }
+
+    // static
+    void Server::ForwardPopErrorScope(WGPUErrorType type, const char* message, void* userdata) {
+        auto* data = reinterpret_cast<ErrorScopeUserdata*>(userdata);
+        data->server->OnDevicePopErrorScope(type, message, data);
+    }
+
+    void Server::OnDevicePopErrorScope(WGPUErrorType type,
+                                       const char* message,
+                                       ErrorScopeUserdata* userdata) {
+        std::unique_ptr<ErrorScopeUserdata> data{userdata};
+
+        ReturnDevicePopErrorScopeCallbackCmd cmd;
+        cmd.requestSerial = data->requestSerial;
+        cmd.type = type;
+        cmd.message = message;
+
+        SerializeCommand(cmd);
     }
 
 }}  // namespace dawn_wire::server

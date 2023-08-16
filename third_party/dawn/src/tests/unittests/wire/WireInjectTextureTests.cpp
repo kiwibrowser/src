@@ -32,13 +32,13 @@ class WireInjectTextureTests : public WireTest {
 TEST_F(WireInjectTextureTests, CallAfterReserveInject) {
     ReservedTexture reservation = GetWireClient()->ReserveTexture(device);
 
-    DawnTexture apiTexture = api.GetNewTexture();
+    WGPUTexture apiTexture = api.GetNewTexture();
     EXPECT_CALL(api, TextureReference(apiTexture));
     ASSERT_TRUE(GetWireServer()->InjectTexture(apiTexture, reservation.id, reservation.generation));
 
-    dawnTextureCreateDefaultView(reservation.texture);
-    DawnTextureView apiDummyView = api.GetNewTextureView();
-    EXPECT_CALL(api, TextureCreateDefaultView(apiTexture)).WillOnce(Return(apiDummyView));
+    wgpuTextureCreateView(reservation.texture, nullptr);
+    WGPUTextureView apiDummyView = api.GetNewTextureView();
+    EXPECT_CALL(api, TextureCreateView(apiTexture, nullptr)).WillOnce(Return(apiDummyView));
     FlushClient();
 }
 
@@ -55,7 +55,7 @@ TEST_F(WireInjectTextureTests, ReserveDifferentIDs) {
 TEST_F(WireInjectTextureTests, InjectExistingID) {
     ReservedTexture reservation = GetWireClient()->ReserveTexture(device);
 
-    DawnTexture apiTexture = api.GetNewTexture();
+    WGPUTexture apiTexture = api.GetNewTexture();
     EXPECT_CALL(api, TextureReference(apiTexture));
     ASSERT_TRUE(GetWireServer()->InjectTexture(apiTexture, reservation.id, reservation.generation));
 
@@ -69,12 +69,12 @@ TEST_F(WireInjectTextureTests, InjectedTextureLifetime) {
     ReservedTexture reservation = GetWireClient()->ReserveTexture(device);
 
     // Injecting the texture adds a reference
-    DawnTexture apiTexture = api.GetNewTexture();
+    WGPUTexture apiTexture = api.GetNewTexture();
     EXPECT_CALL(api, TextureReference(apiTexture));
     ASSERT_TRUE(GetWireServer()->InjectTexture(apiTexture, reservation.id, reservation.generation));
 
     // Releasing the texture removes a single reference.
-    dawnTextureRelease(reservation.texture);
+    wgpuTextureRelease(reservation.texture);
     EXPECT_CALL(api, TextureRelease(apiTexture));
     FlushClient();
 

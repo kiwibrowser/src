@@ -21,7 +21,7 @@ namespace dawn_native { namespace opengl {
     ComputePipeline::ComputePipeline(Device* device, const ComputePipelineDescriptor* descriptor)
         : ComputePipelineBase(device, descriptor) {
         PerStage<const ShaderModule*> modules(nullptr);
-        modules[dawn::ShaderStage::Compute] = ToBackend(descriptor->computeStage->module);
+        modules[SingleShaderStage::Compute] = ToBackend(descriptor->computeStage.module);
 
         PipelineGL::Initialize(device->gl, ToBackend(descriptor->layout), modules);
     }

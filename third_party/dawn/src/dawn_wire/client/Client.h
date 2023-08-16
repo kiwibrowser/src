@@ -15,6 +15,7 @@
 #ifndef DAWNWIRE_CLIENT_CLIENT_H_
 #define DAWNWIRE_CLIENT_CLIENT_H_
 
+#include <dawn/webgpu.h>
 #include <dawn_wire/Wire.h>
 
 #include "dawn_wire/WireClient.h"
@@ -25,32 +26,51 @@
 namespace dawn_wire { namespace client {
 
     class Device;
+    class MemoryTransferService;
 
     class Client : public ClientBase {
       public:
-        Client(CommandSerializer* serializer);
+        Client(CommandSerializer* serializer, MemoryTransferService* memoryTransferService);
         ~Client();
 
-        const char* HandleCommands(const char* commands, size_t size);
-        ReservedTexture ReserveTexture(DawnDevice device);
+        WGPUDevice GetDevice();
 
-        void* GetCmdSpace(size_t size) {
-            return mSerializer->GetCmdSpace(size);
+        MemoryTransferService* GetMemoryTransferService() const {
+            return mMemoryTransferService;
         }
 
-        DawnDevice GetDevice() const {
-            return reinterpret_cast<DawnDeviceImpl*>(mDevice);
+        const volatile char* HandleCommands(const volatile char* commands, size_t size);
+        ReservedTexture ReserveTexture(WGPUDevice device);
+
+        template <typename Cmd>
+        char* SerializeCommand(const Cmd& cmd, size_t extraSize = 0) {
+            size_t requiredSize = cmd.GetRequiredSize();
+            // TODO(cwallez@chromium.org): Check for overflows and allocation success?
+            char* allocatedBuffer = GetCmdSpace(requiredSize + extraSize);
+            cmd.Serialize(allocatedBuffer, *this);
+            return allocatedBuffer + requiredSize;
         }
+
+        void Disconnect();
 
       private:
 #include "dawn_wire/client/ClientPrototypes_autogen.inc"
 
+        char* GetCmdSpace(size_t size);
+
         Device* mDevice = nullptr;
         CommandSerializer* mSerializer = nullptr;
         WireDeserializeAllocator mAllocator;
+        MemoryTransferService* mMemoryTransferService = nullptr;
+        std::unique_ptr<MemoryTransferService> mOwnedMemoryTransferService = nullptr;
+
+        std::vector<char> mDummyCmdSpace;
+        bool mIsDisconnected = false;
     };
 
     DawnProcTable GetProcs();
+
+    std::unique_ptr<MemoryTransferService> CreateInlineMemoryTransferService();
 
 }}  // namespace dawn_wire::client
 

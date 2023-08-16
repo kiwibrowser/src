@@ -17,47 +17,47 @@
 
 #include "dawn_native/Texture.h"
 
-#include "glad/glad.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
 
     class Device;
+    struct GLFormat;
 
-    struct TextureFormatInfo {
-        GLenum internalFormat;
-        GLenum format;
-        GLenum type;
-    };
-
-    class Texture : public TextureBase {
+    class Texture final : public TextureBase {
       public:
         Texture(Device* device, const TextureDescriptor* descriptor);
         Texture(Device* device,
                 const TextureDescriptor* descriptor,
                 GLuint handle,
                 TextureState state);
-        ~Texture();
 
         GLuint GetHandle() const;
         GLenum GetGLTarget() const;
-        TextureFormatInfo GetGLFormat() const;
+        const GLFormat& GetGLFormat() const;
+
+        void EnsureSubresourceContentInitialized(const SubresourceRange& range);
 
       private:
+        ~Texture() override;
+
         void DestroyImpl() override;
+        MaybeError ClearTexture(const SubresourceRange& range, TextureBase::ClearValue clearValue);
 
         GLuint mHandle;
         GLenum mTarget;
     };
 
-    class TextureView : public TextureViewBase {
+    class TextureView final : public TextureViewBase {
       public:
         TextureView(TextureBase* texture, const TextureViewDescriptor* descriptor);
-        ~TextureView();
 
         GLuint GetHandle() const;
         GLenum GetGLTarget() const;
 
       private:
+        ~TextureView() override;
+
         GLuint mHandle;
         GLenum mTarget;
         bool mOwnsHandle;

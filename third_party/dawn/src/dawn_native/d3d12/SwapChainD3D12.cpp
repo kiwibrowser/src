@@ -22,14 +22,14 @@
 namespace dawn_native { namespace d3d12 {
 
     SwapChain::SwapChain(Device* device, const SwapChainDescriptor* descriptor)
-        : SwapChainBase(device, descriptor) {
+        : OldSwapChainBase(device, descriptor) {
         const auto& im = GetImplementation();
         DawnWSIContextD3D12 wsiContext = {};
-        wsiContext.device = reinterpret_cast<DawnDevice>(GetDevice());
+        wsiContext.device = reinterpret_cast<WGPUDevice>(GetDevice());
         im.Init(im.userData, &wsiContext);
 
-        ASSERT(im.textureUsage != DAWN_TEXTURE_USAGE_BIT_NONE);
-        mTextureUsage = static_cast<dawn::TextureUsageBit>(im.textureUsage);
+        ASSERT(im.textureUsage != WGPUTextureUsage_None);
+        mTextureUsage = static_cast<wgpu::TextureUsage>(im.textureUsage);
     }
 
     SwapChain::~SwapChain() {
@@ -40,21 +40,28 @@ namespace dawn_native { namespace d3d12 {
         DawnSwapChainNextTexture next = {};
         DawnSwapChainError error = im.GetNextTexture(im.userData, &next);
         if (error) {
-            GetDevice()->HandleError(error);
+            GetDevice()->HandleError(InternalErrorType::Internal, error);
             return nullptr;
         }
 
-        ID3D12Resource* nativeTexture = static_cast<ID3D12Resource*>(next.texture.ptr);
-        return new Texture(ToBackend(GetDevice()), descriptor, nativeTexture);
+        ComPtr<ID3D12Resource> d3d12Texture = static_cast<ID3D12Resource*>(next.texture.ptr);
+        return new Texture(ToBackend(GetDevice()), descriptor, std::move(d3d12Texture));
     }
 
-    void SwapChain::OnBeforePresent(TextureBase* texture) {
+    MaybeError SwapChain::OnBeforePresent(TextureViewBase* view) {
         Device* device = ToBackend(GetDevice());
 
-        // Perform the necessary transition for the texture to be presented.
-        ToBackend(texture)->TransitionUsageNow(device->GetPendingCommandList(), mTextureUsage);
+        CommandRecordingContext* commandContext;
+        DAWN_TRY_ASSIGN(commandContext, device->GetPendingCommandContext());
 
-        device->ExecuteCommandLists({});
+        // Perform the necessary transition for the texture to be presented.
+        ToBackend(view->GetTexture())
+            ->TrackUsageAndTransitionNow(commandContext, mTextureUsage,
+                                         view->GetSubresourceRange());
+
+        DAWN_TRY(device->ExecutePendingCommandContext());
+
+        return {};
     }
 
 }}  // namespace dawn_native::d3d12

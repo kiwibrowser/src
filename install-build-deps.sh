@@ -1,16 +1,17 @@
 #!/bin/bash -e
-
-# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# Copyright 2012 The Chromium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 # Script to install everything needed to build chromium (well, ideally, anyway)
-# See https://chromium.googlesource.com/chromium/src/+/master/docs/linux/build_instructions.md
-
+# including items requiring sudo privileges.
+# See https://chromium.googlesource.com/chromium/src/+/main/docs/linux/build_instructions.md
+# and https://chromium.googlesource.com/chromium/src/+/HEAD/docs/android_build_instructions.md
 usage() {
   echo "Usage: $0 [--options]"
   echo "Options:"
   echo "--[no-]syms: enable or disable installation of debugging symbols"
   echo "--lib32: enable installation of 32-bit libraries, e.g. for V8 snapshot"
+  echo "--[no-]android: enable or disable installation of android dependencies"
   echo "--[no-]arm: enable or disable installation of arm cross toolchain"
   echo "--[no-]chromeos-fonts: enable or disable installation of Chrome OS"\
        "fonts"
@@ -27,20 +28,17 @@ usage() {
   echo "Script will prompt interactively if options not given."
   exit 1
 }
-
 # Build list of apt packages in dpkg --get-selections format.
 build_apt_package_list() {
   echo "Building apt package list." >&2
   apt-cache dumpavail | \
-    python -c '\
-      from __future__ import print_function; \
-      import re,sys; \
-      o = sys.stdin.read(); \
-      p = {"i386": ":i386"}; \
-      f = re.M | re.S; \
-      r = re.compile(r"^Package: (.+?)$.+?^Architecture: (.+?)$", f); \
-      m = ["%s%s" % (x, p.get(y, "")) for x, y in re.findall(r, o)]; \
-      print("\n".join(m))'
+    python3 -c 'import re,sys; \
+o = sys.stdin.read(); \
+p = {"i386": ":i386"}; \
+f = re.M | re.S; \
+r = re.compile(r"^Package: (.+?)$.+?^Architecture: (.+?)$", f); \
+m = ["%s%s" % (x, p.get(y, "")) for x, y in re.findall(r, o)]; \
+print("\n".join(m))'
 }
 # Checks whether a particular package is available in the repos.
 # Uses pre-formatted ${apt_package_list}.
@@ -50,23 +48,22 @@ package_exists() {
     echo "Call build_apt_package_list() prior to calling package_exists()" >&2
     apt_package_list=$(build_apt_package_list)
   fi
-  # 'apt-cache search' takes a regex string, so eg. the +'s in packages like
-  # "libstdc++" need to be escaped.
+  # `grep` takes a regex string, so the +'s in package names, e.g. "libstdc++",
+  # need to be escaped.
   local escaped="$(echo $1 | sed 's/[\~\+\.\:-]/\\&/g')"
   [ ! -z "$(grep "^${escaped}$" <<< "${apt_package_list}")" ]
 }
-# These default to on because (some) bots need them and it keeps things
-# simple for the bot setup if all bots just run the script in its default
-# mode.  Developers who don't want stuff they don't need installed on their
-# own workstations can pass --no-arm --no-nacl when running the script.
-do_inst_arm=1
-do_inst_nacl=1
+do_inst_arm=0
+do_inst_nacl=0
+do_inst_android=0
 while [ "$1" != "" ]
 do
   case "$1" in
   --syms)                    do_inst_syms=1;;
   --no-syms)                 do_inst_syms=0;;
   --lib32)                   do_inst_lib32=1;;
+  --android)                 do_inst_android=1;;
+  --no-android)              do_inst_android=0;;
   --arm)                     do_inst_arm=1;;
   --no-arm)                  do_inst_arm=0;;
   --chromeos-fonts)          do_inst_chromeos_fonts=1;;
@@ -88,27 +85,32 @@ done
 if [ "$do_inst_arm" = "1" ]; then
   do_inst_lib32=1
 fi
+if [ "$do_inst_android" = "1" ]; then
+  do_inst_lib32=1
+fi
 # Check for lsb_release command in $PATH
 if ! which lsb_release > /dev/null; then
   echo "ERROR: lsb_release not found in \$PATH" >&2
+  echo "try: sudo apt-get install lsb-release" >&2
   exit 1;
 fi
 distro_codename=$(lsb_release --codename --short)
 distro_id=$(lsb_release --id --short)
-supported_codenames="(trusty|xenial|bionic|disco|eoan)"
+supported_codenames="(bionic|focal|jammy)"
 supported_ids="(Debian)"
 if [ 0 -eq "${do_unsupported-0}" ] && [ 0 -eq "${do_quick_check-0}" ] ; then
   if [[ ! $distro_codename =~ $supported_codenames &&
         ! $distro_id =~ $supported_ids ]]; then
-    echo -e "ERROR: The only supported distros are\n" \
-      "\tUbuntu 14.04 LTS (trusty with EoL April 2022)\n" \
-      "\tUbuntu 16.04 LTS (xenial with EoL April 2024)\n" \
+    echo -e "WARNING: The following distributions are supported,
+    but distributions not in the list below can also try to install
+    dependencies by passing the `--unsupported` parameter\n" \
       "\tUbuntu 18.04 LTS (bionic with EoL April 2028)\n" \
-      "\tUbuntu 19.04 (disco)\n" \
-      "\tUbuntu 19.10 (eoan)\n" \
-      "\tDebian 8 (jessie) or later" >&2
+      "\tUbuntu 20.04 LTS (focal with EoL April 2030)\n" \
+      "\tUbuntu 22.04 LTS (jammy with EoL April 2032)\n" \
+      "\tDebian 10 (buster) or later" >&2
     exit 1
   fi
+# Check system architecture
   if ! uname -m | egrep -q "i686|x86_64"; then
     echo "Only x86 architectures are currently supported" >&2
     exit
@@ -119,14 +121,16 @@ if [ "x$(id -u)" != x0 ] && [ 0 -eq "${do_quick_check-0}" ]; then
   echo "You might have to enter your password one or more times for 'sudo'."
   echo
 fi
-if [ "$do_inst_lib32" = "1" ] || [ "$do_inst_nacl" = "1" ]; then
-  sudo dpkg --add-architecture i386
+if [ 0 -eq "${do_quick_check-0}" ] ; then
+  if [ "$do_inst_lib32" = "1" ] || [ "$do_inst_nacl" = "1" ]; then
+    sudo dpkg --add-architecture i386
+  fi
+  sudo apt-get update
 fi
-sudo apt-get update
 # Populate ${apt_package_list} for package_exists() parsing.
 apt_package_list=$(build_apt_package_list)
 # Packages needed for chromeos only
-chromeos_dev_list="libbluetooth-dev libxkbcommon-dev"
+chromeos_dev_list="libbluetooth-dev libxkbcommon-dev mesa-common-dev zstd"
 if package_exists realpath; then
   chromeos_dev_list="${chromeos_dev_list} realpath"
 fi
@@ -145,7 +149,6 @@ dev_list="\
   flex
   git-core
   gperf
-  libappindicator3-dev
   libasound2-dev
   libatspi2.0-dev
   libbrlapi-dev
@@ -173,27 +176,22 @@ dev_list="\
   libspeechd-dev
   libsqlite3-dev
   libssl-dev
+  libsystemd-dev
   libudev-dev
+  libva-dev
   libwww-perl
+  libxshmfence-dev
   libxslt1-dev
   libxss-dev
   libxt-dev
   libxtst-dev
+  lighttpd
   locales
   openbox
   p7zip
   patch
   perl
   pkg-config
-  python
-  python-cherrypy3
-  python-crypto
-  python-dev
-  python-numpy
-  python-opencv
-  python-openssl
-  python-psutil
-  python-yaml
   rpm
   ruby
   subversion
@@ -208,31 +206,40 @@ dev_list="\
 # 64-bit systems need a minimum set of 32-bit compat packages for the pre-built
 # NaCl binaries.
 if file -L /sbin/init | grep -q 'ELF 64-bit'; then
-  dev_list="${dev_list} libc6-i386 lib32gcc1 lib32stdc++6"
+  dev_list="${dev_list} libc6-i386 lib32stdc++6"
+  # lib32gcc-s1 used to be called lib32gcc1 in older distros.
+  if package_exists lib32gcc-s1; then
+    dev_list="${dev_list} lib32gcc-s1"
+  elif package_exists lib32gcc1; then
+    dev_list="${dev_list} lib32gcc1"
+  fi
 fi
 # Run-time libraries required by chromeos only
 chromeos_lib_list="libpulse0 libbz2-1.0"
 # List of required run-time libraries
 common_lib_list="\
-  libappindicator3-1
+  lib32z1
   libasound2
   libatk1.0-0
   libatspi2.0-0
   libc6
   libcairo2
   libcap2
+  libcgi-session-perl
   libcups2
   libdrm2
+  libegl1
   libevdev2
   libexpat1
-  libffi6
   libfontconfig1
   libfreetype6
   libgbm1
   libglib2.0-0
+  libgl1
   libgtk-3-0
   libpam0g
-  libpango1.0-0
+  libpango-1.0-0
+  libpangocairo-1.0-0
   libpci3
   libpcre3
   libpixman-1-0
@@ -240,6 +247,7 @@ common_lib_list="\
   libstdc++6
   libsqlite3-0
   libuuid1
+  libwayland-egl1
   libwayland-egl1-mesa
   libx11-6
   libx11-xcb1
@@ -256,8 +264,17 @@ common_lib_list="\
   libxrandr2
   libxrender1
   libxtst6
+  x11-utils
+  xvfb
   zlib1g
 "
+if package_exists libffi8; then
+  common_lib_list="${common_lib_list} libffi8"
+elif package_exists libffi7; then
+  common_lib_list="${common_lib_list} libffi7"
+elif package_exists libffi6; then
+  common_lib_list="${common_lib_list} libffi6"
+fi
 # Full list of required run-time libraries
 lib_list="\
   $common_lib_list
@@ -266,7 +283,31 @@ lib_list="\
 # 32-bit libraries needed e.g. to compile V8 snapshot for Android or armhf
 lib32_list="linux-libc-dev:i386 libpci3:i386"
 # 32-bit libraries needed for a 32-bit build
-lib32_list="$lib32_list libx11-xcb1:i386"
+# includes some 32-bit libraries required by the Android SDK
+# See https://developer.android.com/sdk/installing/index.html?pkg=tools
+lib32_list="$lib32_list
+  libasound2:i386
+  libatk-bridge2.0-0:i386
+  libatk1.0-0:i386
+  libatspi2.0-0:i386
+  libdbus-1-3:i386
+  libegl1:i386
+  libgl1:i386
+  libglib2.0-0:i386
+  libncurses5:i386
+  libnss3:i386
+  libpango-1.0-0:i386
+  libpangocairo-1.0-0:i386
+  libstdc++6:i386
+  libwayland-egl1:i386
+  libx11-xcb1:i386
+  libxcomposite1:i386
+  libxdamage1:i386
+  libxkbcommon0:i386
+  libxrandr2:i386
+  libxtst6:i386
+  zlib1g:i386
+"
 # Packages that have been removed from this script.  Regardless of configuration
 # or options passed to this script, whenever a package is removed, it should be
 # added here.
@@ -278,6 +319,15 @@ backwards_compatible_list="\
   fonts-thai-tlwg
   fonts-tlwg-garuda
   g++
+  g++-4.8-multilib-arm-linux-gnueabihf
+  gcc-4.8-multilib-arm-linux-gnueabihf
+  g++-9-multilib-arm-linux-gnueabihf
+  gcc-9-multilib-arm-linux-gnueabihf
+  gcc-arm-linux-gnueabihf
+  g++-10-multilib-arm-linux-gnueabihf
+  gcc-10-multilib-arm-linux-gnueabihf
+  g++-10-arm-linux-gnueabihf
+  gcc-10-arm-linux-gnueabihf
   git-svn
   language-pack-da
   language-pack-fr
@@ -285,6 +335,8 @@ backwards_compatible_list="\
   language-pack-zh-hant
   libappindicator-dev
   libappindicator1
+  libappindicator3-1
+  libappindicator3-dev
   libdconf-dev
   libdconf1
   libdconf1:i386
@@ -292,17 +344,29 @@ backwards_compatible_list="\
   libexif12
   libexif12:i386
   libgbm-dev
+  libgbm-dev-lts-trusty
+  libgbm-dev-lts-xenial
   libgconf-2-4:i386
   libgconf2-dev
   libgl1-mesa-dev
+  libgl1-mesa-dev-lts-trusty
+  libgl1-mesa-dev-lts-xenial
   libgl1-mesa-glx:i386
+  libgl1-mesa-glx-lts-trusty:i386
+  libgl1-mesa-glx-lts-xenial:i386
   libgles2-mesa-dev
+  libgles2-mesa-dev-lts-trusty
+  libgles2-mesa-dev-lts-xenial
   libgtk-3-0:i386
   libgtk2.0-0
   libgtk2.0-0:i386
   libgtk2.0-dev
   mesa-common-dev
+  mesa-common-dev-lts-trusty
+  mesa-common-dev-lts-xenial
   msttcorefonts
+  python-dev
+  python-setuptools
   ttf-dejavu-core
   ttf-indic-fonts
   ttf-kochi-gothic
@@ -310,82 +374,70 @@ backwards_compatible_list="\
   ttf-mscorefonts-installer
   xfonts-mathml
 "
-case $distro_codename in
-  trusty)
-    backwards_compatible_list+=" \
-      libgbm-dev-lts-trusty
-      libgl1-mesa-dev-lts-trusty
-      libgl1-mesa-glx-lts-trusty:i386
-      libgles2-mesa-dev-lts-trusty
-      mesa-common-dev-lts-trusty"
-    ;;
-  xenial)
-    backwards_compatible_list+=" \
-      libgbm-dev-lts-xenial
-      libgl1-mesa-dev-lts-xenial
-      libgl1-mesa-glx-lts-xenial:i386
-      libgles2-mesa-dev-lts-xenial
-      mesa-common-dev-lts-xenial"
-    ;;
-esac
+if package_exists python-is-python2; then
+  backwards_compatible_list="${backwards_compatible_list} python-is-python2 python2-dev"
+else
+  backwards_compatible_list="${backwards_compatible_list} python"
+fi
+if package_exists python-crypto; then
+  backwards_compatible_list="${backwards_compatible_list} python-crypto"
+fi
+if package_exists python-numpy; then
+  backwards_compatible_list="${backwards_compatible_list} python-numpy"
+fi
+if package_exists python-openssl; then
+  backwards_compatible_list="${backwards_compatible_list} python-openssl"
+fi
+if package_exists python-psutil; then
+  backwards_compatible_list="${backwards_compatible_list} python-psutil"
+fi
+if package_exists python-yaml; then
+  backwards_compatible_list="${backwards_compatible_list} python-yaml"
+fi
+if package_exists apache2.2-bin; then
+  backwards_compatible_list="${backwards_compatible_list} apache2.2-bin"
+else
+  backwards_compatible_list="${backwards_compatible_list} apache2-bin"
+fi
+if package_exists php8.1-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php8.1-cgi libapache2-mod-php8.1"
+elif package_exists php8.0-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php8.0-cgi libapache2-mod-php8.0"
+elif package_exists php7.4-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php7.4-cgi libapache2-mod-php7.4"
+elif package_exists php7.3-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php7.3-cgi libapache2-mod-php7.3"
+elif package_exists php7.2-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php7.2-cgi libapache2-mod-php7.2"
+elif package_exists php7.1-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php7.1-cgi libapache2-mod-php7.1"
+elif package_exists php7.0-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php7.0-cgi libapache2-mod-php7.0"
+elif package_exists php8.0-cgi; then
+  backwards_compatible_list="${backwards_compatible_list} php8.0-cgi libapache2-mod-php8.0"
+else
+  backwards_compatible_list="${backwards_compatible_list} php5-cgi libapache2-mod-php5"
+fi
 # arm cross toolchain packages needed to build chrome on armhf
-EM_REPO="deb http://emdebian.org/tools/debian/ jessie main"
-EM_SOURCE=$(cat <<EOF
-# Repo added by Chromium $0
-${EM_REPO}
-# deb-src http://emdebian.org/tools/debian/ jessie main
-EOF
-)
-EM_ARCHIVE_KEY_FINGER="084C6C6F39159EDB67969AA87DE089671804772E"
-GPP_ARM_PACKAGE="g++-arm-linux-gnueabihf"
+arm_list="libc6-dev-armhf-cross
+          linux-libc-dev-armhf-cross
+          g++-arm-linux-gnueabihf"
+# Work around for dependency issue Ubuntu: http://crbug.com/435056
 case $distro_codename in
-  jessie)
-    eval $(apt-config shell APT_SOURCESDIR 'Dir::Etc::sourceparts/d')
-    CROSSTOOLS_LIST="${APT_SOURCESDIR}/crosstools.list"
-    arm_list="libc6-dev:armhf
-              linux-libc-dev:armhf"
-    if [ "$do_inst_arm" = "1" ]; then
-      if $(dpkg-query -W ${GPP_ARM_PACKAGE} &>/dev/null); then
-        arm_list+=" ${GPP_ARM_PACKAGE}"
-      else
-        if [ "${add_cross_tool_repo}" = "1" ]; then
-          gpg --keyserver pgp.mit.edu --recv-keys ${EM_ARCHIVE_KEY_FINGER}
-          gpg -a --export ${EM_ARCHIVE_KEY_FINGER} | sudo apt-key add -
-          if ! grep "^${EM_REPO}" "${CROSSTOOLS_LIST}" &>/dev/null; then
-            echo "${EM_SOURCE}" | sudo tee -a "${CROSSTOOLS_LIST}" >/dev/null
-          fi
-          arm_list+=" ${GPP_ARM_PACKAGE}"
-        else
-          echo "The Debian Cross-toolchains repository is necessary to"
-          echo "cross-compile Chromium for arm."
-          echo "Rerun with --add-deb-cross-tool-repo to have it added for you."
-        fi
-      fi
-    fi
-    ;;
-  # All necessary ARM packages are available on the default repos on
-  # Debian 9 and later.
-  *)
-    arm_list="libc6-dev-armhf-cross
-              linux-libc-dev-armhf-cross
-              ${GPP_ARM_PACKAGE}"
-    ;;
-esac
-# Work around for dependency issue Ubuntu/Trusty: http://crbug.com/435056
-case $distro_codename in
-  trusty)
-    arm_list+=" g++-4.8-multilib-arm-linux-gnueabihf
-                gcc-4.8-multilib-arm-linux-gnueabihf"
-    ;;
-  xenial|bionic)
+  bionic)
     arm_list+=" g++-5-multilib-arm-linux-gnueabihf
                 gcc-5-multilib-arm-linux-gnueabihf
                 gcc-arm-linux-gnueabihf"
     ;;
-  disco|eoan)
-    arm_list+=" g++-9-multilib-arm-linux-gnueabihf
-                gcc-9-multilib-arm-linux-gnueabihf
+  focal)
+    arm_list+=" g++-10-multilib-arm-linux-gnueabihf
+                gcc-10-multilib-arm-linux-gnueabihf
                 gcc-arm-linux-gnueabihf"
+    ;;
+  jammy)
+    arm_list+=" gcc-arm-linux-gnueabihf
+                g++-11-arm-linux-gnueabihf
+                gcc-11-arm-linux-gnueabihf"
     ;;
 esac
 # Packages to build NaCl, its toolchains, and its ports.
@@ -402,7 +454,7 @@ nacl_list="\
   libncurses5:i386
   lib32ncurses5-dev
   libnss3:i386
-  libpango1.0-0:i386
+  libpango-1.0-0:i386
   libssl-dev:i386
   libtinfo-dev
   libtinfo-dev:i386
@@ -420,12 +472,17 @@ nacl_list="\
   ${naclports_list}
 "
 # Some package names have changed over time
-if package_exists libssl1.1; then
+if package_exists libssl-dev; then
+  nacl_list="${nacl_list} libssl-dev:i386"
+elif package_exists libssl1.1; then
   nacl_list="${nacl_list} libssl1.1:i386"
 elif package_exists libssl1.0.2; then
   nacl_list="${nacl_list} libssl1.0.2:i386"
 else
   nacl_list="${nacl_list} libssl1.0.0:i386"
+fi
+if package_exists libtinfo5; then
+  nacl_list="${nacl_list} libtinfo5"
 fi
 if package_exists libpng16-16; then
   lib_list="${lib_list} libpng16-16"
@@ -449,31 +506,17 @@ else
   dev_list="${dev_list} libudev0"
   nacl_list="${nacl_list} libudev0:i386"
 fi
-if package_exists libbrlapi0.7; then
+if package_exists libbrlapi0.8; then
+  dev_list="${dev_list} libbrlapi0.8"
+elif package_exists libbrlapi0.7; then
   dev_list="${dev_list} libbrlapi0.7"
 elif package_exists libbrlapi0.6; then
   dev_list="${dev_list} libbrlapi0.6"
 else
   dev_list="${dev_list} libbrlapi0.5"
 fi
-if package_exists apache2.2-bin; then
-  dev_list="${dev_list} apache2.2-bin"
-else
-  dev_list="${dev_list} apache2-bin"
-fi
 if package_exists libav-tools; then
   dev_list="${dev_list} libav-tools"
-fi
-if package_exists php7.3-cgi; then
-  dev_list="${dev_list} php7.3-cgi libapache2-mod-php7.3"
-elif package_exists php7.2-cgi; then
-  dev_list="${dev_list} php7.2-cgi libapache2-mod-php7.2"
-elif package_exists php7.1-cgi; then
-  dev_list="${dev_list} php7.1-cgi libapache2-mod-php7.1"
-elif package_exists php7.0-cgi; then
-  dev_list="${dev_list} php7.0-cgi libapache2-mod-php7.0"
-else
-  dev_list="${dev_list} php5-cgi libapache2-mod-php5"
 fi
 # Some packages are only needed if the distribution actually supports
 # installing them.
@@ -518,7 +561,7 @@ fi
 # that are part of v8 need to be compiled with -m32 which means
 # that basic multilib support is needed.
 if file -L /sbin/init | grep -q 'ELF 64-bit'; then
-  # gcc-multilib conflicts with the arm cross compiler (at least in trusty) but
+  # gcc-multilib conflicts with the arm cross compiler but
   # g++-X.Y-multilib gives us the 32-bit support that we need. Find out the
   # appropriate value of X and Y by seeing what version the current
   # distribution's g++-multilib package depends on.
@@ -565,7 +608,7 @@ if [ "$do_inst_syms" = "1" ]; then
   if [ "$(dbg_package_name libatk1.0-0)" == "" ]; then
     dbg_list="$dbg_list $(dbg_package_name libatk1.0)"
   fi
-  if [ "$(dbg_package_name libpango1.0-0)" == "" ]; then
+  if [ "$(dbg_package_name libpango-1.0-0)" == "" ]; then
     dbg_list="$dbg_list $(dbg_package_name libpango1.0-dev)"
   fi
 else
@@ -577,6 +620,11 @@ if [ "$do_inst_lib32" = "1" ]; then
 else
   echo "Skipping 32-bit libraries."
   lib32_list=
+fi
+if [ "$do_inst_android" = "1" ]; then
+  echo "Including Android dependencies."
+else
+  echo "Skipping Android dependencies."
 fi
 if [ "$do_inst_arm" = "1" ]; then
   echo "Including ARM cross toolchain."
@@ -680,7 +728,7 @@ if [ "$do_inst_chromeos_fonts" != "0" ]; then
       echo "This is expected if your repo is installed on a remote file system."
     fi
     echo "It is recommended to install your repo on a local file system."
-    echo "You can skip the installation of the Chrome OS default founts with"
+    echo "You can skip the installation of the Chrome OS default fonts with"
     echo "the command line option: --no-chromeos-fonts."
     exit 1
   fi
@@ -706,4 +754,3 @@ else
     sudo locale-gen ${CHROMIUM_LOCALE}
   done
 fi
-

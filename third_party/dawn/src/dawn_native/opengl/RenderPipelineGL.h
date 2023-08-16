@@ -18,8 +18,7 @@
 #include "dawn_native/RenderPipeline.h"
 
 #include "dawn_native/opengl/PipelineGL.h"
-
-#include "glad/glad.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 #include <vector>
 
@@ -28,17 +27,17 @@ namespace dawn_native { namespace opengl {
     class Device;
     class PersistentPipelineState;
 
-    class RenderPipeline : public RenderPipelineBase, public PipelineGL {
+    class RenderPipeline final : public RenderPipelineBase, public PipelineGL {
       public:
         RenderPipeline(Device* device, const RenderPipelineDescriptor* descriptor);
-        ~RenderPipeline();
 
         GLenum GetGLPrimitiveTopology() const;
 
         void ApplyNow(PersistentPipelineState& persistentPipelineState);
 
       private:
-        void CreateVAOForVertexInput(const VertexInputDescriptor* vertexInput);
+        ~RenderPipeline() override;
+        void CreateVAOForVertexState(const VertexStateDescriptor* vertexState);
 
         // TODO(yunchao.he@intel.com): vao need to be deduplicated between pipelines.
         GLuint mVertexArrayObject;

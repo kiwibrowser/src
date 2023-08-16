@@ -15,21 +15,50 @@
 #include "dawn_native/Error.h"
 
 #include "dawn_native/ErrorData.h"
+#include "dawn_native/dawn_platform.h"
 
 namespace dawn_native {
 
-    ErrorData* MakeError(ErrorType type,
-                         std::string message,
-                         const char* file,
-                         const char* function,
-                         int line) {
-        ErrorData* error = new ErrorData(type, message);
-        error->AppendBacktrace(file, function, line);
-        return error;
+    void IgnoreErrors(MaybeError maybeError) {
+        if (maybeError.IsError()) {
+            std::unique_ptr<ErrorData> errorData = maybeError.AcquireError();
+            // During shutdown and destruction, device lost errors can be ignored.
+            // We can also ignore other unexpected internal errors on shut down and treat it as
+            // device lost so that we can continue with destruction.
+            ASSERT(errorData->GetType() == InternalErrorType::DeviceLost ||
+                   errorData->GetType() == InternalErrorType::Internal);
+        }
     }
 
-    void AppendBacktrace(ErrorData* error, const char* file, const char* function, int line) {
-        error->AppendBacktrace(file, function, line);
+    wgpu::ErrorType ToWGPUErrorType(InternalErrorType type) {
+        switch (type) {
+            case InternalErrorType::Validation:
+                return wgpu::ErrorType::Validation;
+            case InternalErrorType::OutOfMemory:
+                return wgpu::ErrorType::OutOfMemory;
+
+            // There is no equivalent of Internal errors in the WebGPU API. Internal errors cause
+            // the device at the API level to be lost, so treat it like a DeviceLost error.
+            case InternalErrorType::Internal:
+            case InternalErrorType::DeviceLost:
+                return wgpu::ErrorType::DeviceLost;
+
+            default:
+                return wgpu::ErrorType::Unknown;
+        }
+    }
+
+    InternalErrorType FromWGPUErrorType(wgpu::ErrorType type) {
+        switch (type) {
+            case wgpu::ErrorType::Validation:
+                return InternalErrorType::Validation;
+            case wgpu::ErrorType::OutOfMemory:
+                return InternalErrorType::OutOfMemory;
+            case wgpu::ErrorType::DeviceLost:
+                return InternalErrorType::DeviceLost;
+            default:
+                return InternalErrorType::Internal;
+        }
     }
 
 }  // namespace dawn_native

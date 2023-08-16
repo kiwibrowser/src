@@ -17,6 +17,8 @@
 
 #include "common/Constants.h"
 
+#include "dawn_native/AttachmentState.h"
+#include "dawn_native/BindingInfo.h"
 #include "dawn_native/Texture.h"
 
 #include "dawn_native/dawn_platform.h"
@@ -45,17 +47,21 @@ namespace dawn_native {
         DrawIndexedIndirect,
         EndComputePass,
         EndRenderPass,
+        ExecuteBundles,
         InsertDebugMarker,
         PopDebugGroup,
         PushDebugGroup,
+        ResolveQuerySet,
         SetComputePipeline,
         SetRenderPipeline,
         SetStencilReference,
+        SetViewport,
         SetScissorRect,
         SetBlendColor,
         SetBindGroup,
         SetIndexBuffer,
-        SetVertexBuffers,
+        SetVertexBuffer,
+        WriteTimestamp,
     };
 
     struct BeginComputePassCmd {};
@@ -63,45 +69,42 @@ namespace dawn_native {
     struct RenderPassColorAttachmentInfo {
         Ref<TextureViewBase> view;
         Ref<TextureViewBase> resolveTarget;
-        dawn::LoadOp loadOp;
-        dawn::StoreOp storeOp;
+        wgpu::LoadOp loadOp;
+        wgpu::StoreOp storeOp;
         dawn_native::Color clearColor;
     };
 
     struct RenderPassDepthStencilAttachmentInfo {
         Ref<TextureViewBase> view;
-        dawn::LoadOp depthLoadOp;
-        dawn::StoreOp depthStoreOp;
-        dawn::LoadOp stencilLoadOp;
-        dawn::StoreOp stencilStoreOp;
+        wgpu::LoadOp depthLoadOp;
+        wgpu::StoreOp depthStoreOp;
+        wgpu::LoadOp stencilLoadOp;
+        wgpu::StoreOp stencilStoreOp;
         float clearDepth;
         uint32_t clearStencil;
     };
 
     struct BeginRenderPassCmd {
-        std::bitset<kMaxColorAttachments> colorAttachmentsSet;
+        Ref<AttachmentState> attachmentState;
         RenderPassColorAttachmentInfo colorAttachments[kMaxColorAttachments];
-        bool hasDepthStencilAttachment;
         RenderPassDepthStencilAttachmentInfo depthStencilAttachment;
 
-        // Cache the width, height and sample count of all attachments for convenience
+        // Cache the width and height of all attachments for convenience
         uint32_t width;
         uint32_t height;
-        uint32_t sampleCount;
     };
 
     struct BufferCopy {
         Ref<BufferBase> buffer;
-        uint64_t offset;       // Bytes
-        uint32_t rowPitch;     // Bytes
-        uint32_t imageHeight;  // Texels
+        uint64_t offset;
+        uint32_t bytesPerRow;
+        uint32_t rowsPerImage;
     };
 
     struct TextureCopy {
         Ref<TextureBase> texture;
-        uint32_t level;
-        uint32_t slice;
-        Origin3D origin;  // Texels
+        uint32_t mipLevel;
+        Origin3D origin;  // Texels / array layer
     };
 
     struct CopyBufferToBufferCmd {
@@ -170,6 +173,10 @@ namespace dawn_native {
 
     struct EndRenderPassCmd {};
 
+    struct ExecuteBundlesCmd {
+        uint32_t count;
+    };
+
     struct InsertDebugMarkerCmd {
         uint32_t length;
     };
@@ -178,6 +185,14 @@ namespace dawn_native {
 
     struct PushDebugGroupCmd {
         uint32_t length;
+    };
+
+    struct ResolveQuerySetCmd {
+        Ref<QuerySetBase> querySet;
+        uint32_t firstQuery;
+        uint32_t queryCount;
+        Ref<BufferBase> destination;
+        uint64_t destinationOffset;
     };
 
     struct SetComputePipelineCmd {
@@ -192,6 +207,10 @@ namespace dawn_native {
         uint32_t reference;
     };
 
+    struct SetViewportCmd {
+        float x, y, width, height, minDepth, maxDepth;
+    };
+
     struct SetScissorRectCmd {
         uint32_t x, y, width, height;
     };
@@ -201,7 +220,7 @@ namespace dawn_native {
     };
 
     struct SetBindGroupCmd {
-        uint32_t index;
+        BindGroupIndex index;
         Ref<BindGroupBase> group;
         uint32_t dynamicOffsetCount;
     };
@@ -209,11 +228,19 @@ namespace dawn_native {
     struct SetIndexBufferCmd {
         Ref<BufferBase> buffer;
         uint64_t offset;
+        uint64_t size;
     };
 
-    struct SetVertexBuffersCmd {
-        uint32_t startSlot;
-        uint32_t count;
+    struct SetVertexBufferCmd {
+        uint32_t slot;
+        Ref<BufferBase> buffer;
+        uint64_t offset;
+        uint64_t size;
+    };
+
+    struct WriteTimestampCmd {
+        Ref<QuerySetBase> querySet;
+        uint32_t queryIndex;
     };
 
     // This needs to be called before the CommandIterator is freed so that the Ref<> present in

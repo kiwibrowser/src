@@ -18,6 +18,9 @@
 #if !defined(DAWN_ENABLE_BACKEND_VULKAN)
 #    error "vulkan_platform.h included without the Vulkan backend enabled"
 #endif
+#if defined(VULKAN_CORE_H_)
+#    error "vulkan.h included before vulkan_platform.h"
+#endif
 
 #include "common/Platform.h"
 
@@ -33,10 +36,19 @@
 // (like vulkan.h on 64 bit) but makes sure the types are different on 32 bit architectures.
 
 #if defined(DAWN_PLATFORM_64_BIT)
-#    define DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object) \
-        using object##Native = struct object##_T*;
+#    define DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object) using object = struct object##_T*;
+// This function is needed because MSVC doesn't accept reinterpret_cast from uint64_t from uint64_t
+// TODO(cwallez@chromium.org): Remove this once we rework vulkan_platform.h
+template <typename T>
+T NativeNonDispatachableHandleFromU64(uint64_t u64) {
+    return reinterpret_cast<T>(u64);
+}
 #elif defined(DAWN_PLATFORM_32_BIT)
-#    define DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object) using object##Native = uint64_t;
+#    define DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object) using object = uint64_t;
+template <typename T>
+T NativeNonDispatachableHandleFromU64(uint64_t u64) {
+    return u64;
+}
 #else
 #    error "Unsupported platform"
 #endif
@@ -53,108 +65,135 @@ DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(VkSomeHandle)
 // One way to get the alignment inside structures of a type is to look at the alignment of it
 // wrapped in a structure. Hence VkSameHandleNativeWrappe
 
-template <typename T>
-struct WrapperStruct {
-    T member;
-};
+namespace dawn_native { namespace vulkan {
 
-template <typename T>
-static constexpr size_t AlignOfInStruct = alignof(WrapperStruct<T>);
+    namespace detail {
+        template <typename T>
+        struct WrapperStruct {
+            T member;
+        };
 
-static constexpr size_t kNativeVkHandleAlignment = AlignOfInStruct<VkSomeHandleNative>;
-static constexpr size_t kUint64Alignment = AlignOfInStruct<VkSomeHandleNative>;
+        template <typename T>
+        static constexpr size_t AlignOfInStruct = alignof(WrapperStruct<T>);
 
-// Simple handle types that supports "nullptr_t" as a 0 value.
-template <typename Tag, typename HandleType>
-class alignas(kNativeVkHandleAlignment) VkNonDispatchableHandle {
-  public:
-    // Default constructor and assigning of VK_NULL_HANDLE
-    VkNonDispatchableHandle() = default;
-    VkNonDispatchableHandle(std::nullptr_t) : mHandle(0) {
+        static constexpr size_t kNativeVkHandleAlignment = AlignOfInStruct<VkSomeHandle>;
+        static constexpr size_t kUint64Alignment = AlignOfInStruct<uint64_t>;
+
+        // Simple handle types that supports "nullptr_t" as a 0 value.
+        template <typename Tag, typename HandleType>
+        class alignas(detail::kNativeVkHandleAlignment) VkHandle {
+          public:
+            // Default constructor and assigning of VK_NULL_HANDLE
+            VkHandle() = default;
+            VkHandle(std::nullptr_t) {
+            }
+
+            // Use default copy constructor/assignment
+            VkHandle(const VkHandle<Tag, HandleType>& other) = default;
+            VkHandle& operator=(const VkHandle<Tag, HandleType>&) = default;
+
+            // Comparisons between handles
+            bool operator==(VkHandle<Tag, HandleType> other) const {
+                return mHandle == other.mHandle;
+            }
+            bool operator!=(VkHandle<Tag, HandleType> other) const {
+                return mHandle != other.mHandle;
+            }
+
+            // Comparisons between handles and VK_NULL_HANDLE
+            bool operator==(std::nullptr_t) const {
+                return mHandle == 0;
+            }
+            bool operator!=(std::nullptr_t) const {
+                return mHandle != 0;
+            }
+
+            // Implicit conversion to real Vulkan types.
+            operator HandleType() const {
+                return GetHandle();
+            }
+
+            HandleType GetHandle() const {
+                return mHandle;
+            }
+
+            HandleType& operator*() {
+                return mHandle;
+            }
+
+            static VkHandle<Tag, HandleType> CreateFromHandle(HandleType handle) {
+                return VkHandle{handle};
+            }
+
+          private:
+            explicit VkHandle(HandleType handle) : mHandle(handle) {
+            }
+
+            HandleType mHandle = 0;
+        };
+    }  // namespace detail
+
+    static constexpr std::nullptr_t VK_NULL_HANDLE = nullptr;
+
+    template <typename Tag, typename HandleType>
+    HandleType* AsVkArray(detail::VkHandle<Tag, HandleType>* handle) {
+        return reinterpret_cast<HandleType*>(handle);
     }
 
-    // Use default copy constructor/assignment
-    VkNonDispatchableHandle(const VkNonDispatchableHandle<Tag, HandleType>& other) = default;
-    VkNonDispatchableHandle& operator=(const VkNonDispatchableHandle<Tag, HandleType>&) = default;
+}}  // namespace dawn_native::vulkan
 
-    // Comparisons between handles
-    bool operator==(VkNonDispatchableHandle<Tag, HandleType> other) {
-        return mHandle == other.mHandle;
-    }
-    bool operator!=(VkNonDispatchableHandle<Tag, HandleType> other) {
-        return mHandle != other.mHandle;
-    }
+#define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object)                                   \
+    DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object)                              \
+    namespace dawn_native { namespace vulkan {                                      \
+            using object = detail::VkHandle<struct VkTag##object, ::object>;        \
+            static_assert(sizeof(object) == sizeof(uint64_t), "");                  \
+            static_assert(alignof(object) == detail::kUint64Alignment, "");         \
+            static_assert(sizeof(object) == sizeof(::object), "");                  \
+            static_assert(alignof(object) == detail::kNativeVkHandleAlignment, ""); \
+        }                                                                           \
+    }  // namespace dawn_native::vulkan
 
-    // Comparisons between handles and VK_NULL_HANDLE
-    bool operator==(std::nullptr_t) {
-        return mHandle == 0;
-    }
-    bool operator!=(std::nullptr_t) {
-        return mHandle != 0;
-    }
+// Import additional parts of Vulkan that are supported on our architecture and preemptively include
+// headers that vulkan.h includes that we have "undefs" for.
+#if defined(DAWN_PLATFORM_WINDOWS)
+#    define VK_USE_PLATFORM_WIN32_KHR
+#    include "common/windows_with_undefs.h"
+#endif  // DAWN_PLATFORM_WINDOWS
 
-    // The regular Vulkan handle type depends on the pointer width but is always 64 bits wide.
-    //  - On 64bit it is an opaque pointer type, probably to help with type safety
-    //  - On 32bit it is a uint64_t because pointers aren't wide enough (and non dispatchable
-    //    handles can be optimized to not be pointer but contain GPU virtual addresses or the
-    //    data in a packed form).
-    // Because of this we need two types of conversions from our handle type: to uint64_t and to
-    // the "native" Vulkan type that may not be an uint64_t
+#if defined(DAWN_USE_X11)
+#    define VK_USE_PLATFORM_XLIB_KHR
+#    include "common/xlib_with_undefs.h"
+#endif  // defined(DAWN_USE_X11)
 
-    static VkNonDispatchableHandle<Tag, HandleType> CreateFromU64(uint64_t handle) {
-        return {handle};
-    }
+#if defined(DAWN_ENABLE_BACKEND_METAL)
+#    define VK_USE_PLATFORM_METAL_EXT
+#endif  // defined(DAWN_ENABLE_BACKEND_METAL)
 
-    uint64_t GetU64() const {
-        return mHandle;
-    }
+#if defined(DAWN_PLATFORM_ANDROID)
+#    define VK_USE_PLATFORM_ANDROID_KHR
+#endif  // defined(DAWN_PLATFORM_ANDROID)
 
+#if defined(DAWN_PLATFORM_FUCHSIA)
+#    define VK_USE_PLATFORM_FUCHSIA
+#endif  // defined(DAWN_PLATFORM_FUCHSIA)
+
+// The actual inclusion of vulkan.h!
+#define VK_NO_PROTOTYPES
+#include <vulkan/vulkan.h>
+
+// Redefine VK_NULL_HANDLE for better type safety where possible.
+#undef VK_NULL_HANDLE
 #if defined(DAWN_PLATFORM_64_BIT)
-    static VkNonDispatchableHandle<Tag, HandleType> CreateFromHandle(HandleType handle) {
-        return CreateFromU64(static_cast<uint64_t>(reinterpret_cast<intptr_t>(handle)));
-    }
-
-    HandleType GetHandle() const {
-        return mHandle;
-    }
+static constexpr std::nullptr_t VK_NULL_HANDLE = nullptr;
 #elif defined(DAWN_PLATFORM_32_BIT)
-    static VkNonDispatchableHandle<Tag, HandleType> CreateFromHandle(HandleType handle) {
-        return {handle};
-    }
-
-    HandleType GetHandle() const {
-        return mHandle;
-    }
+static constexpr uint64_t VK_NULL_HANDLE = 0;
 #else
 #    error "Unsupported platform"
 #endif
 
-  private:
-    VkNonDispatchableHandle(uint64_t handle) : mHandle(handle) {
-    }
-
-    uint64_t mHandle = 0;
-};
-
-#define VK_DEFINE_NON_DISPATCHABLE_HANDLE(object)                          \
-    struct VkTag##object;                                                  \
-    DAWN_DEFINE_NATIVE_NON_DISPATCHABLE_HANDLE(object)                     \
-    using object = VkNonDispatchableHandle<VkTag##object, object##Native>; \
-    static_assert(sizeof(object) == sizeof(uint64_t), "");                 \
-    static_assert(alignof(object) == kUint64Alignment, "");                \
-    static_assert(sizeof(object) == sizeof(object##Native), "");           \
-    static_assert(alignof(object) == kNativeVkHandleAlignment, "");
-
-#    include <vulkan/vulkan.h>
-
-    // VK_NULL_HANDLE is defined to 0 but we don't want our handle type to compare to arbitrary
-    // integers. Redefine VK_NULL_HANDLE to nullptr that has its own type.
-#    undef VK_NULL_HANDLE
-#    define VK_NULL_HANDLE nullptr
-
-// Remove windows.h macros after vulkan_platform's include of windows.h
-#if defined(DAWN_PLATFORM_WINDOWS)
-#    include "common/windows_with_undefs.h"
-#endif
+// Include Fuchsia-specific definitions that are not upstreamed yet.
+#if defined(DAWN_PLATFORM_FUCHSIA)
+#    include <vulkan/vulkan_fuchsia_extras.h>
+#endif  // defined(DAWN_PLATFORM_FUCHSIA)
 
 #endif  // COMMON_VULKANPLATFORM_H_

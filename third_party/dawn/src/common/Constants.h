@@ -18,8 +18,6 @@
 #include <cstdint>
 
 static constexpr uint32_t kMaxBindGroups = 4u;
-// TODO(cwallez@chromium.org): investigate bindgroup limits
-static constexpr uint32_t kMaxBindingsPerGroup = 16u;
 static constexpr uint32_t kMaxVertexAttributes = 16u;
 // Vulkan has a standalone limit named maxVertexInputAttributeOffset (2047u at least) for vertex
 // attribute offset. The limit might be meaningless because Vulkan has another limit named
@@ -32,9 +30,24 @@ static constexpr uint32_t kMaxVertexBuffers = 16u;
 static constexpr uint32_t kMaxVertexBufferStride = 2048u;
 static constexpr uint32_t kNumStages = 3;
 static constexpr uint32_t kMaxColorAttachments = 4u;
-static constexpr uint32_t kTextureRowPitchAlignment = 256u;
+static constexpr uint32_t kTextureBytesPerRowAlignment = 256u;
 // Dynamic buffer offsets require offset to be divisible by 256
 static constexpr uint64_t kMinDynamicBufferOffsetAlignment = 256u;
+
+// Per stage limits
+static constexpr uint32_t kMaxSampledTexturesPerShaderStage = 16;
+static constexpr uint32_t kMaxSamplersPerShaderStage = 16;
+static constexpr uint32_t kMaxStorageBuffersPerShaderStage = 6;
+static constexpr uint32_t kMaxStorageTexturesPerShaderStage = 4;
+static constexpr uint32_t kMaxUniformBuffersPerShaderStage = 12;
+
+// Per pipeline layout limits
+static constexpr uint32_t kMaxDynamicUniformBuffersPerPipelineLayout = 8u;
+static constexpr uint32_t kMaxDynamicStorageBuffersPerPipelineLayout = 4u;
+
+// Max size of uniform buffer binding
+static constexpr uint64_t kMaxUniformBufferBindingSize = 16384u;
+
 // Indirect command sizes
 static constexpr uint64_t kDispatchIndirectSize = 3 * sizeof(uint32_t);
 static constexpr uint64_t kDrawIndirectSize = 4 * sizeof(uint32_t);
@@ -43,13 +56,6 @@ static constexpr uint64_t kDrawIndexedIndirectSize = 5 * sizeof(uint32_t);
 // Non spec defined constants.
 static constexpr float kLodMin = 0.0;
 static constexpr float kLodMax = 1000.0;
-
-static constexpr uint32_t kVendorID_AMD = 0x1002;
-static constexpr uint32_t kVendorID_ARM = 0x13B5;
-static constexpr uint32_t kVendorID_ImgTec = 0x1010;
-static constexpr uint32_t kVendorID_Intel = 0x8086;
-static constexpr uint32_t kVendorID_Nvidia = 0x10DE;
-static constexpr uint32_t kVendorID_Qualcomm = 0x5143;
 
 // Max texture size constants
 static constexpr uint32_t kMaxTextureSize = 8192u;

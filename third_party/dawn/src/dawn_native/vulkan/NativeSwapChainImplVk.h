@@ -32,18 +32,18 @@ namespace dawn_native { namespace vulkan {
         ~NativeSwapChainImpl();
 
         void Init(DawnWSIContextVulkan* context);
-        DawnSwapChainError Configure(DawnTextureFormat format,
-                                     DawnTextureUsageBit,
+        DawnSwapChainError Configure(WGPUTextureFormat format,
+                                     WGPUTextureUsage,
                                      uint32_t width,
                                      uint32_t height);
         DawnSwapChainError GetNextTexture(DawnSwapChainNextTexture* nextTexture);
         DawnSwapChainError Present();
 
-        dawn::TextureFormat GetPreferredFormat() const;
+        wgpu::TextureFormat GetPreferredFormat() const;
 
         struct ChosenConfig {
             VkFormat nativeFormat;
-            dawn::TextureFormat format;
+            wgpu::TextureFormat format;
             VkColorSpaceKHR colorSpace;
             VkSurfaceTransformFlagBitsKHR preTransform;
             uint32_t minImageCount;
@@ -52,6 +52,8 @@ namespace dawn_native { namespace vulkan {
         };
 
       private:
+        void UpdateSurfaceConfig();
+
         VkSurfaceKHR mSurface = VK_NULL_HANDLE;
         VkSwapchainKHR mSwapChain = VK_NULL_HANDLE;
         std::vector<VkImage> mSwapChainImages;

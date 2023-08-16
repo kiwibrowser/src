@@ -15,20 +15,31 @@
 #ifndef DAWNNATIVE_DAWNNATIVE_H_
 #define DAWNNATIVE_DAWNNATIVE_H_
 
-#include <dawn/dawn.h>
+#include <dawn/dawn_proc_table.h>
+#include <dawn/webgpu.h>
 #include <dawn_native/dawn_native_export.h>
 
 #include <string>
 #include <vector>
 
+namespace dawn_platform {
+    class Platform;
+}  // namespace dawn_platform
+
+namespace wgpu {
+    struct AdapterProperties;
+}
+
 namespace dawn_native {
 
+    // DEPRECATED: use WGPUAdapterProperties instead.
     struct PCIInfo {
         uint32_t deviceId = 0;
         uint32_t vendorId = 0;
         std::string name;
     };
 
+    // DEPRECATED: use WGPUBackendType instead.
     enum class BackendType {
         D3D12,
         Metal,
@@ -37,6 +48,7 @@ namespace dawn_native {
         Vulkan,
     };
 
+    // DEPRECATED: use WGPUAdapterType instead.
     enum class DeviceType {
         DiscreteGPU,
         IntegratedGPU,
@@ -50,6 +62,7 @@ namespace dawn_native {
     // An optional parameter of Adapter::CreateDevice() to send additional information when creating
     // a Device. For example, we can use it to enable a workaround, optimization or feature.
     struct DAWN_NATIVE_EXPORT DeviceDescriptor {
+        std::vector<const char*> requiredExtensions;
         std::vector<const char*> forceEnabledToggles;
         std::vector<const char*> forceDisabledToggles;
     };
@@ -63,6 +76,11 @@ namespace dawn_native {
         const char* url;
     };
 
+    // A struct to record the information of an extension. An extension is a GPU feature that is not
+    // required to be supported by all Dawn backends and can only be used when it is enabled on the
+    // creation of device.
+    using ExtensionInfo = ToggleInfo;
+
     // An adapter is an object that represent on possibility of creating devices in the system.
     // Most of the time it will represent a combination of a physical GPU and an API. Not that the
     // same GPU can be represented by multiple adapters but on different APIs.
@@ -75,16 +93,24 @@ namespace dawn_native {
         Adapter(AdapterBase* impl);
         ~Adapter();
 
+        // DEPRECATED: use GetProperties instead.
         BackendType GetBackendType() const;
         DeviceType GetDeviceType() const;
         const PCIInfo& GetPCIInfo() const;
+
+        // Essentially webgpu.h's wgpuAdapterGetProperties while we don't have WGPUAdapter in
+        // dawn.json
+        void GetProperties(wgpu::AdapterProperties* properties) const;
+
+        std::vector<const char*> GetSupportedExtensions() const;
+        WGPUDeviceProperties GetAdapterProperties() const;
 
         explicit operator bool() const;
 
         // Create a device on this adapter, note that the interface will change to include at least
         // a device descriptor and a pointer to backend specific options.
         // On an error, nullptr is returned.
-        DawnDevice CreateDevice(const DeviceDescriptor* deviceDescriptor = nullptr);
+        WGPUDevice CreateDevice(const DeviceDescriptor* deviceDescriptor = nullptr);
 
       private:
         AdapterBase* mImpl = nullptr;
@@ -93,10 +119,10 @@ namespace dawn_native {
     // Base class for options passed to Instance::DiscoverAdapters.
     struct DAWN_NATIVE_EXPORT AdapterDiscoveryOptionsBase {
       public:
-        const BackendType backendType;
+        const WGPUBackendType backendType;
 
       protected:
-        AdapterDiscoveryOptionsBase(BackendType type);
+        AdapterDiscoveryOptionsBase(WGPUBackendType type);
     };
 
     // Represents a connection to dawn_native and is used for dependency injection, discovering
@@ -127,7 +153,14 @@ namespace dawn_native {
 
         // Enable backend's validation layers if it has.
         void EnableBackendValidation(bool enableBackendValidation);
-        bool IsBackendValidationEnabled();
+
+        // Enable debug capture on Dawn startup
+        void EnableBeginCaptureOnStartup(bool beginCaptureOnStartup);
+
+        void SetPlatform(dawn_platform::Platform* platform);
+
+        // Returns the underlying WGPUInstance object.
+        WGPUInstance Get() const;
 
       private:
         InstanceBase* mImpl = nullptr;
@@ -137,8 +170,49 @@ namespace dawn_native {
     DAWN_NATIVE_EXPORT DawnProcTable GetProcs();
 
     // Query the names of all the toggles that are enabled in device
-    DAWN_NATIVE_EXPORT std::vector<const char*> GetTogglesUsed(DawnDevice device);
+    DAWN_NATIVE_EXPORT std::vector<const char*> GetTogglesUsed(WGPUDevice device);
 
+    // Backdoor to get the number of lazy clears for testing
+    DAWN_NATIVE_EXPORT size_t GetLazyClearCountForTesting(WGPUDevice device);
+
+    // Backdoor to get the number of deprecation warnings for testing
+    DAWN_NATIVE_EXPORT size_t GetDeprecationWarningCountForTesting(WGPUDevice device);
+
+    //  Query if texture has been initialized
+    DAWN_NATIVE_EXPORT bool IsTextureSubresourceInitialized(WGPUTexture texture,
+                                                            uint32_t baseMipLevel,
+                                                            uint32_t levelCount,
+                                                            uint32_t baseArrayLayer,
+                                                            uint32_t layerCount);
+
+    // Backdoor to get the order of the ProcMap for testing
+    DAWN_NATIVE_EXPORT std::vector<const char*> GetProcMapNamesForTesting();
+
+    // ErrorInjector functions used for testing only. Defined in dawn_native/ErrorInjector.cpp
+    DAWN_NATIVE_EXPORT void EnableErrorInjector();
+    DAWN_NATIVE_EXPORT void DisableErrorInjector();
+    DAWN_NATIVE_EXPORT void ClearErrorInjector();
+    DAWN_NATIVE_EXPORT uint64_t AcquireErrorInjectorCallCount();
+    DAWN_NATIVE_EXPORT void InjectErrorAt(uint64_t index);
+
+    // The different types of ExternalImageDescriptors
+    enum ExternalImageDescriptorType {
+        OpaqueFD,
+        DmaBuf,
+        IOSurface,
+        DXGISharedHandle,
+    };
+
+    // Common properties of external images
+    struct DAWN_NATIVE_EXPORT ExternalImageDescriptor {
+      public:
+        const ExternalImageDescriptorType type;
+        const WGPUTextureDescriptor* cTextureDescriptor;  // Must match image creation params
+        bool isCleared;  // Sets whether the texture will be cleared before use
+
+      protected:
+        ExternalImageDescriptor(ExternalImageDescriptorType type);
+    };
 }  // namespace dawn_native
 
 #endif  // DAWNNATIVE_DAWNNATIVE_H_

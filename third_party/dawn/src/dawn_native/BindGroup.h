@@ -16,6 +16,7 @@
 #define DAWNNATIVE_BINDGROUP_H_
 
 #include "common/Constants.h"
+#include "common/Math.h"
 #include "dawn_native/BindGroupLayout.h"
 #include "dawn_native/Error.h"
 #include "dawn_native/Forward.h"
@@ -40,22 +41,44 @@ namespace dawn_native {
 
     class BindGroupBase : public ObjectBase {
       public:
-        BindGroupBase(DeviceBase* device, const BindGroupDescriptor* descriptor);
-
         static BindGroupBase* MakeError(DeviceBase* device);
 
+        BindGroupLayoutBase* GetLayout();
         const BindGroupLayoutBase* GetLayout() const;
-        BufferBinding GetBindingAsBufferBinding(size_t binding);
-        SamplerBase* GetBindingAsSampler(size_t binding);
-        TextureViewBase* GetBindingAsTextureView(size_t binding);
+        BufferBinding GetBindingAsBufferBinding(BindingIndex bindingIndex);
+        SamplerBase* GetBindingAsSampler(BindingIndex bindingIndex) const;
+        TextureViewBase* GetBindingAsTextureView(BindingIndex bindingIndex);
+        const ityp::span<uint32_t, uint64_t>& GetUnverifiedBufferSizes() const;
+
+      protected:
+        // To save memory, the size of a bind group is dynamically determined and the bind group is
+        // placement-allocated into memory big enough to hold the bind group with its
+        // dynamically-sized bindings after it. The pointer of the memory of the beginning of the
+        // binding data should be passed as |bindingDataStart|.
+        BindGroupBase(DeviceBase* device,
+                      const BindGroupDescriptor* descriptor,
+                      void* bindingDataStart);
+
+        // Helper to instantiate BindGroupBase. We pass in |derived| because BindGroupBase may not
+        // be first in the allocation. The binding data is stored after the Derived class.
+        template <typename Derived>
+        BindGroupBase(Derived* derived, DeviceBase* device, const BindGroupDescriptor* descriptor)
+            : BindGroupBase(device,
+                            descriptor,
+                            AlignPtr(reinterpret_cast<char*>(derived) + sizeof(Derived),
+                                     descriptor->layout->GetBindingDataAlignment())) {
+            static_assert(std::is_base_of<BindGroupBase, Derived>::value, "");
+        }
+
+      protected:
+        ~BindGroupBase() override;
 
       private:
         BindGroupBase(DeviceBase* device, ObjectBase::ErrorTag tag);
+        void DeleteThis() override;
 
         Ref<BindGroupLayoutBase> mLayout;
-        std::array<Ref<ObjectBase>, kMaxBindingsPerGroup> mBindings;
-        std::array<uint32_t, kMaxBindingsPerGroup> mOffsets;
-        std::array<uint32_t, kMaxBindingsPerGroup> mSizes;
+        BindGroupLayoutBase::BindingDataPointers mBindingData;
     };
 
 }  // namespace dawn_native

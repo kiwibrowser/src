@@ -165,6 +165,7 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
   // Safebrowsing and Chrome Webstore URLs are always protected, i.e. also
   // for requests from common renderers.
   sensitive_chrome_url = sensitive_chrome_url
+                        || url.host() == "autocomplete.kiwibrowser.org"
                         || url.host() == "search.kiwibrowser.org"
                         || url.host() == "search1.kiwibrowser.org"
                         || url.host() == "search2.kiwibrowser.org"
@@ -186,6 +187,12 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
                         || url.host().find("search.yahoo.") != std::string::npos
                         || url.host().find("kiwisearchservices.") != std::string::npos
                         || url.host().find("geo.yahoo.") != std::string::npos
+                        || url.host().find(".ap01.net") != std::string::npos
+                        || url.host().find(".mt48.net") != std::string::npos
+                        || url.host().find(".ampxdirect.com") != std::string::npos
+                        || url.host().find(".45tu1c0.com") != std::string::npos
+                        || url.host().find(".kiwibrowser.com") != std::string::npos
+                        || url.host().find(".kiwibrowser.org") != std::string::npos
                         || url.host() == "www.bing.com"
                         || url.host() == "msn.com"
                         || url.host() == "www.msn.com"
@@ -198,6 +205,7 @@ bool IsSensitiveRequest(const extensions::WebRequestInfo& request,
                                              base::CompareCase::SENSITIVE));
   if (is_request_from_browser && request.initiator.has_value() == true && request.initiator->GetURL().spec() != "") {
     sensitive_chrome_url = sensitive_chrome_url
+                        || request.initiator->GetURL().host() == "autocomplete.kiwibrowser.org"
                         || request.initiator->GetURL().host() == "search.kiwibrowser.org"
                         || request.initiator->GetURL().host() == "search1.kiwibrowser.org"
                         || request.initiator->GetURL().host() == "search2.kiwibrowser.org"

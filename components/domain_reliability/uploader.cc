@@ -82,7 +82,7 @@ class DomainReliabilityUploaderImpl
     if (discard_uploads_)
       discarded_upload_count_++;
 
-    if (discard_uploads_ || shutdown_) {
+    if (true) {
       VLOG(1) << "Discarding report instead of uploading.";
       UploadResult result;
       result.status = UploadResult::SUCCESS;

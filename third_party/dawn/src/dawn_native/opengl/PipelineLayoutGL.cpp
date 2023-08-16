@@ -26,39 +26,46 @@ namespace dawn_native { namespace opengl {
         GLuint samplerIndex = 0;
         GLuint sampledTextureIndex = 0;
         GLuint ssboIndex = 0;
+        GLuint storageTextureIndex = 0;
 
-        for (uint32_t group : IterateBitSet(GetBindGroupLayoutsMask())) {
-            const auto& groupInfo = GetBindGroupLayout(group)->GetBindingInfo();
+        for (BindGroupIndex group : IterateBitSet(GetBindGroupLayoutsMask())) {
+            const BindGroupLayoutBase* bgl = GetBindGroupLayout(group);
+            mIndexInfo[group].resize(bgl->GetBindingCount());
 
-            for (size_t binding = 0; binding < kMaxBindingsPerGroup; ++binding) {
-                if (!groupInfo.mask[binding]) {
-                    continue;
-                }
-
-                switch (groupInfo.types[binding]) {
-                    case dawn::BindingType::UniformBuffer:
-                        mIndexInfo[group][binding] = uboIndex;
+            for (BindingIndex bindingIndex{0}; bindingIndex < bgl->GetBindingCount();
+                 ++bindingIndex) {
+                switch (bgl->GetBindingInfo(bindingIndex).type) {
+                    case wgpu::BindingType::UniformBuffer:
+                        mIndexInfo[group][bindingIndex] = uboIndex;
                         uboIndex++;
                         break;
-                    case dawn::BindingType::Sampler:
-                        mIndexInfo[group][binding] = samplerIndex;
+                    case wgpu::BindingType::Sampler:
+                    case wgpu::BindingType::ComparisonSampler:
+                        mIndexInfo[group][bindingIndex] = samplerIndex;
                         samplerIndex++;
                         break;
-                    case dawn::BindingType::SampledTexture:
-                        mIndexInfo[group][binding] = sampledTextureIndex;
+                    case wgpu::BindingType::SampledTexture:
+                        mIndexInfo[group][bindingIndex] = sampledTextureIndex;
                         sampledTextureIndex++;
                         break;
 
-                    case dawn::BindingType::StorageBuffer:
-                        mIndexInfo[group][binding] = ssboIndex;
+                    case wgpu::BindingType::StorageBuffer:
+                    case wgpu::BindingType::ReadonlyStorageBuffer:
+                        mIndexInfo[group][bindingIndex] = ssboIndex;
                         ssboIndex++;
                         break;
 
-                    // TODO(shaobo.yan@intel.com): Implement dynamic buffer offset
-                    case dawn::BindingType::DynamicUniformBuffer:
-                    case dawn::BindingType::DynamicStorageBuffer:
+                    case wgpu::BindingType::ReadonlyStorageTexture:
+                    case wgpu::BindingType::WriteonlyStorageTexture:
+                        mIndexInfo[group][bindingIndex] = storageTextureIndex;
+                        storageTextureIndex++;
+                        break;
+
+                    case wgpu::BindingType::StorageTexture:
                         UNREACHABLE();
                         break;
+
+                        // TODO(shaobo.yan@intel.com): Implement dynamic buffer offset
                 }
             }
         }

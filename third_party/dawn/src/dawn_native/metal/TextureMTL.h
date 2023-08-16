@@ -17,44 +17,52 @@
 
 #include "dawn_native/Texture.h"
 
+#include <IOSurface/IOSurfaceRef.h>
 #import <Metal/Metal.h>
+#include "dawn_native/DawnNative.h"
 
 namespace dawn_native { namespace metal {
 
     class Device;
 
-    MTLPixelFormat MetalPixelFormat(dawn::TextureFormat format);
+    MTLPixelFormat MetalPixelFormat(wgpu::TextureFormat format);
     MaybeError ValidateIOSurfaceCanBeWrapped(const DeviceBase* device,
                                              const TextureDescriptor* descriptor,
                                              IOSurfaceRef ioSurface,
                                              uint32_t plane);
 
-    class Texture : public TextureBase {
+    class Texture final : public TextureBase {
       public:
         Texture(Device* device, const TextureDescriptor* descriptor);
         Texture(Device* device, const TextureDescriptor* descriptor, id<MTLTexture> mtlTexture);
         Texture(Device* device,
-                const TextureDescriptor* descriptor,
+                const ExternalImageDescriptor* descriptor,
                 IOSurfaceRef ioSurface,
                 uint32_t plane);
-        ~Texture();
 
         id<MTLTexture> GetMTLTexture();
 
+        void EnsureSubresourceContentInitialized(const SubresourceRange& range);
+
       private:
+        ~Texture() override;
+
         void DestroyImpl() override;
+
+        MaybeError ClearTexture(const SubresourceRange& range, TextureBase::ClearValue clearValue);
 
         id<MTLTexture> mMtlTexture = nil;
     };
 
-    class TextureView : public TextureViewBase {
+    class TextureView final : public TextureViewBase {
       public:
         TextureView(TextureBase* texture, const TextureViewDescriptor* descriptor);
-        ~TextureView();
 
         id<MTLTexture> GetMTLTexture();
 
       private:
+        ~TextureView() override;
+
         id<MTLTexture> mMtlTextureView = nil;
     };
 

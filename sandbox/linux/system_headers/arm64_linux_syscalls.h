@@ -1063,4 +1063,60 @@
 #define __NR_memfd_create 279
 #endif
 
+#if !defined(__NR_bpf)
+#define __NR_bpf 280
+#endif
+
+#if !defined(__NR_execveat)
+#define __NR_execveat 281
+#endif
+
+#if !defined(__NR_userfaultfd)
+#define __NR_userfaultfd 282
+#endif
+
+#if !defined(__NR_membarrier)
+#define __NR_membarrier 283
+#endif
+
+#if !defined(__NR_mlock2)
+#define __NR_mlock2 284
+#endif
+
+#if !defined(__NR_copy_file_range)
+#define __NR_copy_file_range 285
+#endif
+
+#if !defined(__NR_preadv2)
+#define __NR_preadv2 286
+#endif
+
+#if !defined(__NR_pwritev2)
+#define __NR_pwritev2 287
+#endif
+
+#if !defined(__NR_pkey_mprotect)
+#define __NR_pkey_mprotect 288
+#endif
+
+#if !defined(__NR_pkey_alloc)
+#define __NR_pkey_alloc 289
+#endif
+
+#if !defined(__NR_pkey_free)
+#define __NR_pkey_free 290
+#endif
+
+#if !defined(__NR_statx)
+#define __NR_statx 291
+#endif
+
+#if !defined(__NR_io_pgetevents)
+#define __NR_io_pgetevents 292
+#endif
+
+#if !defined(__NR_rseq)
+#define __NR_rseq 293
+#endif
+
 #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_ARM64_LINUX_SYSCALLS_H_

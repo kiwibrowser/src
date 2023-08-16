@@ -285,7 +285,8 @@ public class ExternalNavigationHandler {
         boolean isRedirectFromFormSubmit = isFormSubmit && params.isRedirect();
 
         if (!typedRedirectToExternalProtocol) {
-            if (!linkNotFromIntent && !incomingIntentRedirect && !isRedirectFromFormSubmit) {
+            if (!linkNotFromIntent && !incomingIntentRedirect && !isRedirectFromFormSubmit
+                  && params.getUrl() != null && !params.getUrl().contains("play.google.com") && !params.getUrl().startsWith("market://")) {
                 if (DEBUG) Log.i(TAG, "NO_OVERRIDE: Incoming intent (not a redirect)");
                 return OverrideUrlLoadingResult.NO_OVERRIDE;
             }
@@ -429,7 +430,7 @@ public class ExternalNavigationHandler {
 
         // If the user allowed opening external apps
         final boolean canOpenInExternalApp = ContextUtils.getAppSharedPreferences().getBoolean("open_in_external_app", false);
-        if (!isExternalProtocol && !canOpenInExternalApp && params.getUrl() != null && !params.getUrl().matches("play.google.com")) {
+        if (!isExternalProtocol && !canOpenInExternalApp && params.getUrl() != null && !params.getUrl().contains("play.google.com") && !params.getUrl().startsWith("market://")) {
             return OverrideUrlLoadingResult.NO_OVERRIDE;
         }
 

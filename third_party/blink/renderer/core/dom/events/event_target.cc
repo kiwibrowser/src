@@ -802,6 +802,7 @@ bool EventTarget::FireEventListeners(Event* event,
                       &&  document->location()->host().Contains("forum") != true
                       &&  document->location()->host().Contains("instagram") != true
                       &&  document->location()->host().Contains("twitter") != true
+                      &&  document->location()->host().Contains("redcafe.net") != true
                       &&  document->location()->host().Contains("flashx") != true
                       &&  document->location()->host().Contains("auth0") != true
                       &&  document->location()->host().Contains("ahjaciijnoiaklcomgnblndopackapon") != true

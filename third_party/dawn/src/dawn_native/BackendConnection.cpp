@@ -16,11 +16,11 @@
 
 namespace dawn_native {
 
-    BackendConnection::BackendConnection(InstanceBase* instance, BackendType type)
+    BackendConnection::BackendConnection(InstanceBase* instance, wgpu::BackendType type)
         : mInstance(instance), mType(type) {
     }
 
-    BackendType BackendConnection::GetType() const {
+    wgpu::BackendType BackendConnection::GetType() const {
         return mType;
     }
 

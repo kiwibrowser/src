@@ -17,15 +17,25 @@
 
 #include "dawn_native/BindGroupLayout.h"
 
+#include "common/SlabAllocator.h"
+#include "common/ityp_stack_vec.h"
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 namespace dawn_native { namespace d3d12 {
 
+    class BindGroup;
+    class CPUDescriptorHeapAllocation;
     class Device;
+    class SamplerHeapCacheEntry;
+    class StagingDescriptorAllocator;
 
-    class BindGroupLayout : public BindGroupLayoutBase {
+    class BindGroupLayout final : public BindGroupLayoutBase {
       public:
         BindGroupLayout(Device* device, const BindGroupLayoutDescriptor* descriptor);
+
+        ResultOrError<BindGroup*> AllocateBindGroup(Device* device,
+                                                    const BindGroupDescriptor* descriptor);
+        void DeallocateBindGroup(BindGroup* bindGroup, CPUDescriptorHeapAllocation* viewAllocation);
 
         enum DescriptorType {
             CBV,
@@ -35,7 +45,7 @@ namespace dawn_native { namespace d3d12 {
             Count,
         };
 
-        const std::array<uint32_t, kMaxBindingsPerGroup>& GetBindingOffsets() const;
+        ityp::span<BindingIndex, const uint32_t> GetBindingOffsets() const;
         uint32_t GetCbvUavSrvDescriptorTableSize() const;
         uint32_t GetSamplerDescriptorTableSize() const;
         uint32_t GetCbvUavSrvDescriptorCount() const;
@@ -44,9 +54,15 @@ namespace dawn_native { namespace d3d12 {
         const D3D12_DESCRIPTOR_RANGE* GetSamplerDescriptorRanges() const;
 
       private:
-        std::array<uint32_t, kMaxBindingsPerGroup> mBindingOffsets;
+        ~BindGroupLayout() override = default;
+        ityp::stack_vec<BindingIndex, uint32_t, kMaxOptimalBindingsPerGroup> mBindingOffsets;
         std::array<uint32_t, DescriptorType::Count> mDescriptorCounts;
         D3D12_DESCRIPTOR_RANGE mRanges[DescriptorType::Count];
+
+        SlabAllocator<BindGroup> mBindGroupAllocator;
+
+        StagingDescriptorAllocator* mSamplerAllocator = nullptr;
+        StagingDescriptorAllocator* mViewAllocator = nullptr;
     };
 
 }}  // namespace dawn_native::d3d12

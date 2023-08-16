@@ -15,26 +15,26 @@
 #include "dawn_native/opengl/PipelineGL.h"
 
 #include "common/BitSetIterator.h"
+#include "common/Log.h"
 #include "dawn_native/BindGroupLayout.h"
 #include "dawn_native/opengl/Forward.h"
 #include "dawn_native/opengl/OpenGLFunctions.h"
 #include "dawn_native/opengl/PipelineLayoutGL.h"
 #include "dawn_native/opengl/ShaderModuleGL.h"
 
-#include <iostream>
 #include <set>
 
 namespace dawn_native { namespace opengl {
 
     namespace {
 
-        GLenum GLShaderType(dawn::ShaderStage stage) {
+        GLenum GLShaderType(SingleShaderStage stage) {
             switch (stage) {
-                case dawn::ShaderStage::Vertex:
+                case SingleShaderStage::Vertex:
                     return GL_VERTEX_SHADER;
-                case dawn::ShaderStage::Fragment:
+                case SingleShaderStage::Fragment:
                     return GL_FRAGMENT_SHADER;
-                case dawn::ShaderStage::Compute:
+                case SingleShaderStage::Compute:
                     return GL_COMPUTE_SHADER;
                 default:
                     UNREACHABLE();
@@ -64,9 +64,8 @@ namespace dawn_native { namespace opengl {
                 if (infoLogLength > 1) {
                     std::vector<char> buffer(infoLogLength);
                     gl.GetShaderInfoLog(shader, infoLogLength, nullptr, &buffer[0]);
-                    std::cout << source << std::endl;
-                    std::cout << "Program compilation failed:\n";
-                    std::cout << buffer.data() << std::endl;
+                    dawn::ErrorLog() << source << "\nProgram compilation failed:\n"
+                                     << buffer.data();
                 }
             }
             return shader;
@@ -74,14 +73,14 @@ namespace dawn_native { namespace opengl {
 
         mProgram = gl.CreateProgram();
 
-        dawn::ShaderStageBit activeStages = dawn::ShaderStageBit::None;
-        for (dawn::ShaderStage stage : IterateStages(kAllStages)) {
+        wgpu::ShaderStage activeStages = wgpu::ShaderStage::None;
+        for (SingleShaderStage stage : IterateStages(kAllStages)) {
             if (modules[stage] != nullptr) {
                 activeStages |= StageBit(stage);
             }
         }
 
-        for (dawn::ShaderStage stage : IterateStages(activeStages)) {
+        for (SingleShaderStage stage : IterateStages(activeStages)) {
             GLuint shader = CreateShader(gl, GLShaderType(stage), modules[stage]->GetSource());
             gl.AttachShader(mProgram, shader);
         }
@@ -97,8 +96,7 @@ namespace dawn_native { namespace opengl {
             if (infoLogLength > 1) {
                 std::vector<char> buffer(infoLogLength);
                 gl.GetProgramInfoLog(mProgram, infoLogLength, nullptr, &buffer[0]);
-                std::cout << "Program link failed:\n";
-                std::cout << buffer.data() << std::endl;
+                dawn::ErrorLog() << "Program link failed:\n" << buffer.data();
             }
         }
 
@@ -108,38 +106,56 @@ namespace dawn_native { namespace opengl {
         // etc.
         const auto& indices = layout->GetBindingIndexInfo();
 
-        for (uint32_t group : IterateBitSet(layout->GetBindGroupLayoutsMask())) {
-            const auto& groupInfo = layout->GetBindGroupLayout(group)->GetBindingInfo();
+        for (BindGroupIndex group : IterateBitSet(layout->GetBindGroupLayoutsMask())) {
+            const BindGroupLayoutBase* bgl = layout->GetBindGroupLayout(group);
 
-            for (uint32_t binding = 0; binding < kMaxBindingsPerGroup; ++binding) {
-                if (!groupInfo.mask[binding]) {
-                    continue;
-                }
+            for (const auto& it : bgl->GetBindingMap()) {
+                BindingNumber bindingNumber = it.first;
+                BindingIndex bindingIndex = it.second;
 
-                std::string name = GetBindingName(group, binding);
-                switch (groupInfo.types[binding]) {
-                    case dawn::BindingType::UniformBuffer: {
+                std::string name = GetBindingName(group, bindingNumber);
+                switch (bgl->GetBindingInfo(bindingIndex).type) {
+                    case wgpu::BindingType::UniformBuffer: {
                         GLint location = gl.GetUniformBlockIndex(mProgram, name.c_str());
-                        gl.UniformBlockBinding(mProgram, location, indices[group][binding]);
-                    } break;
+                        if (location != -1) {
+                            gl.UniformBlockBinding(mProgram, location,
+                                                   indices[group][bindingIndex]);
+                        }
+                        break;
+                    }
 
-                    case dawn::BindingType::StorageBuffer: {
+                    case wgpu::BindingType::StorageBuffer:
+                    case wgpu::BindingType::ReadonlyStorageBuffer: {
                         GLuint location = gl.GetProgramResourceIndex(
                             mProgram, GL_SHADER_STORAGE_BLOCK, name.c_str());
-                        gl.ShaderStorageBlockBinding(mProgram, location, indices[group][binding]);
-                    } break;
+                        if (location != GL_INVALID_INDEX) {
+                            gl.ShaderStorageBlockBinding(mProgram, location,
+                                                         indices[group][bindingIndex]);
+                        }
+                        break;
+                    }
 
-                    case dawn::BindingType::Sampler:
-                    case dawn::BindingType::SampledTexture:
+                    case wgpu::BindingType::Sampler:
+                    case wgpu::BindingType::ComparisonSampler:
+                    case wgpu::BindingType::SampledTexture:
                         // These binding types are handled in the separate sampler and texture
                         // emulation
                         break;
 
-                    // TODO(shaobo.yan@intel.com): Implement dynamic buffer offset.
-                    case dawn::BindingType::DynamicUniformBuffer:
-                    case dawn::BindingType::DynamicStorageBuffer:
+                    case wgpu::BindingType::ReadonlyStorageTexture:
+                    case wgpu::BindingType::WriteonlyStorageTexture: {
+                        GLint location = gl.GetUniformLocation(mProgram, name.c_str());
+                        if (location != -1) {
+                            gl.Uniform1i(location, indices[group][bindingIndex]);
+                        }
+                        break;
+                    }
+
+                    case wgpu::BindingType::StorageTexture:
                         UNREACHABLE();
                         break;
+
+                        // TODO(shaobo.yan@intel.com): Implement dynamic buffer offset.
                 }
             }
         }
@@ -147,7 +163,7 @@ namespace dawn_native { namespace opengl {
         // Compute links between stages for combined samplers, then bind them to texture units
         {
             std::set<CombinedSampler> combinedSamplersSet;
-            for (dawn::ShaderStage stage : IterateStages(activeStages)) {
+            for (SingleShaderStage stage : IterateStages(activeStages)) {
                 for (const auto& combined : modules[stage]->GetCombinedSamplerInfo()) {
                     combinedSamplersSet.insert(combined);
                 }
@@ -160,28 +176,50 @@ namespace dawn_native { namespace opengl {
             for (const auto& combined : combinedSamplersSet) {
                 std::string name = combined.GetName();
                 GLint location = gl.GetUniformLocation(mProgram, name.c_str());
+
+                if (location == -1) {
+                    continue;
+                }
+
                 gl.Uniform1i(location, textureUnit);
 
-                GLuint samplerIndex =
-                    indices[combined.samplerLocation.group][combined.samplerLocation.binding];
-                mUnitsForSamplers[samplerIndex].push_back(textureUnit);
+                bool shouldUseFiltering;
+                {
+                    const BindGroupLayoutBase* bgl =
+                        layout->GetBindGroupLayout(combined.textureLocation.group);
+                    BindingIndex bindingIndex =
+                        bgl->GetBindingIndex(combined.textureLocation.binding);
 
-                GLuint textureIndex =
-                    indices[combined.textureLocation.group][combined.textureLocation.binding];
-                mUnitsForTextures[textureIndex].push_back(textureUnit);
+                    GLuint textureIndex = indices[combined.textureLocation.group][bindingIndex];
+                    mUnitsForTextures[textureIndex].push_back(textureUnit);
+
+                    Format::Type componentType =
+                        bgl->GetBindingInfo(bindingIndex).textureComponentType;
+                    shouldUseFiltering = componentType == Format::Type::Float;
+                }
+                {
+                    const BindGroupLayoutBase* bgl =
+                        layout->GetBindGroupLayout(combined.samplerLocation.group);
+                    BindingIndex bindingIndex =
+                        bgl->GetBindingIndex(combined.samplerLocation.binding);
+
+                    GLuint samplerIndex = indices[combined.samplerLocation.group][bindingIndex];
+                    mUnitsForSamplers[samplerIndex].push_back({textureUnit, shouldUseFiltering});
+                }
 
                 textureUnit++;
             }
         }
     }
 
-    const std::vector<GLuint>& PipelineGL::GetTextureUnitsForSampler(GLuint index) const {
+    const std::vector<PipelineGL::SamplerUnit>& PipelineGL::GetTextureUnitsForSampler(
+        GLuint index) const {
         ASSERT(index < mUnitsForSamplers.size());
         return mUnitsForSamplers[index];
     }
 
     const std::vector<GLuint>& PipelineGL::GetTextureUnitsForTextureView(GLuint index) const {
-        ASSERT(index < mUnitsForSamplers.size());
+        ASSERT(index < mUnitsForTextures.size());
         return mUnitsForTextures[index];
     }
 

@@ -1426,6 +1426,79 @@ AccessibleNode* Element::accessibleNode() {
   return rare_data.EnsureAccessibleNode(this);
 }
 
+bool Element::toggleAttribute(const AtomicString& qualified_name,
+                              ExceptionState& exception_state) {
+  // https://dom.spec.whatwg.org/#dom-element-toggleattribute
+  // 1. If qualifiedName does not match the Name production in XML, then throw
+  // an "InvalidCharacterError" DOMException.
+  if (!Document::IsValidName(qualified_name)) {
+    exception_state.ThrowDOMException(
+        kInvalidCharacterError,
+        "'" + qualified_name + "' is not a valid attribute name.");
+    return false;
+  }
+  // 2. If the context object is in the HTML namespace and its node document is
+  // an HTML document, then set qualifiedName to qualifiedName in ASCII
+  // lowercase.
+  AtomicString lower_case_name = LowercaseIfNecessary(qualified_name);
+  // 3. Let attribute be the first attribute in the context object’s attribute
+  // list whose qualified name is qualifiedName, and null otherwise.
+  // 4. If attribute is null, then
+  if (!getAttribute(lower_case_name)) {
+    // 4. 1. If force is not given or is true, create an attribute whose local
+    // name is qualifiedName, value is the empty string, and node document is
+    // the context object’s node document, then append this attribute to the
+    // context object, and then return true.
+    setAttribute(lower_case_name, g_empty_atom);
+    return true;
+  }
+  // 5. Otherwise, if force is not given or is false, remove an attribute given
+  // qualifiedName and the context object, and then return false.
+  removeAttribute(lower_case_name);
+  return false;
+}
+
+bool Element::toggleAttribute(const AtomicString& qualified_name,
+                              bool force,
+                              ExceptionState& exception_state) {
+  // https://dom.spec.whatwg.org/#dom-element-toggleattribute
+  // 1. If qualifiedName does not match the Name production in XML, then throw
+  // an "InvalidCharacterError" DOMException.
+  if (!Document::IsValidName(qualified_name)) {
+    exception_state.ThrowDOMException(
+        kInvalidCharacterError,
+        "'" + qualified_name + "' is not a valid attribute name.");
+    return false;
+  }
+  // 2. If the context object is in the HTML namespace and its node document is
+  // an HTML document, then set qualifiedName to qualifiedName in ASCII
+  // lowercase.
+  AtomicString lower_case_name = LowercaseIfNecessary(qualified_name);
+  // 3. Let attribute be the first attribute in the context object’s attribute
+  // list whose qualified name is qualifiedName, and null otherwise.
+  // 4. If attribute is null, then
+  if (!getAttribute(lower_case_name)) {
+    // 4. 1. If force is not given or is true, create an attribute whose local
+    // name is qualifiedName, value is the empty string, and node document is
+    // the context object’s node document, then append this attribute to the
+    // context object, and then return true.
+    if (force) {
+      setAttribute(lower_case_name, g_empty_atom);
+      return true;
+    }
+    // 4. 2. Return false.
+    return false;
+  }
+  // 5. Otherwise, if force is not given or is false, remove an attribute given
+  // qualifiedName and the context object, and then return false.
+  if (!force) {
+    removeAttribute(lower_case_name);
+    return false;
+  }
+  // 6. Return true.
+  return true;
+}
+
 const AtomicString& Element::getAttribute(
     const AtomicString& local_name) const {
   if (!GetElementData())

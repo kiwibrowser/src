@@ -15,6 +15,8 @@
 #ifndef DAWNNATIVE_METAL_PIPELINELAYOUTMTL_H_
 #define DAWNNATIVE_METAL_PIPELINELAYOUTMTL_H_
 
+#include "common/ityp_stack_vec.h"
+#include "dawn_native/BindingInfo.h"
 #include "dawn_native/PipelineLayout.h"
 
 #include "dawn_native/PerStage.h"
@@ -29,16 +31,30 @@ namespace dawn_native { namespace metal {
 
     class Device;
 
-    class PipelineLayout : public PipelineLayoutBase {
+    // The number of Metal buffers usable by applications in general
+    static constexpr size_t kMetalBufferTableSize = 31;
+    // The Metal buffer slot that Dawn reserves for its own use to pass more data to shaders
+    static constexpr size_t kBufferLengthBufferSlot = kMetalBufferTableSize - 1;
+    // The number of Metal buffers Dawn can use in a generic way (i.e. that aren't reserved)
+    static constexpr size_t kGenericMetalBufferSlots = kMetalBufferTableSize - 1;
+
+    class PipelineLayout final : public PipelineLayoutBase {
       public:
         PipelineLayout(Device* device, const PipelineLayoutDescriptor* descriptor);
 
         using BindingIndexInfo =
-            std::array<std::array<uint32_t, kMaxBindingsPerGroup>, kMaxBindGroups>;
-        const BindingIndexInfo& GetBindingIndexInfo(dawn::ShaderStage stage) const;
+            ityp::array<BindGroupIndex,
+                        ityp::stack_vec<BindingIndex, uint32_t, kMaxOptimalBindingsPerGroup>,
+                        kMaxBindGroups>;
+        const BindingIndexInfo& GetBindingIndexInfo(SingleShaderStage stage) const;
+
+        // The number of Metal vertex stage buffers used for the whole pipeline layout.
+        uint32_t GetBufferBindingCount(SingleShaderStage stage);
 
       private:
+        ~PipelineLayout() override = default;
         PerStage<BindingIndexInfo> mIndexInfo;
+        PerStage<uint32_t> mBufferBindingCount;
     };
 
 }}  // namespace dawn_native::metal

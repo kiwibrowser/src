@@ -18,6 +18,10 @@
 #include "dawn_native/DawnNative.h"
 
 #include "dawn_native/Error.h"
+#include "dawn_native/Extensions.h"
+#include "dawn_native/dawn_platform.h"
+
+#include <string>
 
 namespace dawn_native {
 
@@ -25,19 +29,25 @@ namespace dawn_native {
 
     class AdapterBase {
       public:
-        AdapterBase(InstanceBase* instance, BackendType backend);
+        AdapterBase(InstanceBase* instance, wgpu::BackendType backend);
         virtual ~AdapterBase() = default;
 
-        BackendType GetBackendType() const;
-        DeviceType GetDeviceType() const;
+        wgpu::BackendType GetBackendType() const;
+        wgpu::AdapterType GetAdapterType() const;
         const PCIInfo& GetPCIInfo() const;
         InstanceBase* GetInstance() const;
 
         DeviceBase* CreateDevice(const DeviceDescriptor* descriptor = nullptr);
 
+        ExtensionsSet GetSupportedExtensions() const;
+        bool SupportsAllRequestedExtensions(
+            const std::vector<const char*>& requestedExtensions) const;
+        WGPUDeviceProperties GetAdapterProperties() const;
+
       protected:
         PCIInfo mPCIInfo = {};
-        DeviceType mDeviceType = DeviceType::Unknown;
+        wgpu::AdapterType mAdapterType = wgpu::AdapterType::Unknown;
+        ExtensionsSet mSupportedExtensions;
 
       private:
         virtual ResultOrError<DeviceBase*> CreateDeviceImpl(const DeviceDescriptor* descriptor) = 0;
@@ -45,7 +55,7 @@ namespace dawn_native {
         MaybeError CreateDeviceInternal(DeviceBase** result, const DeviceDescriptor* descriptor);
 
         InstanceBase* mInstance = nullptr;
-        BackendType mBackend;
+        wgpu::BackendType mBackend;
     };
 
 }  // namespace dawn_native

@@ -349,11 +349,11 @@ bool SimpleIndexFile::IndexMetadata::CheckIndexMetadata() {
     return false;
   }
 
-  static_assert(kSimpleVersion == 8, "index metadata reader out of date");
+  static_assert(kSimpleVersion == 9, "index metadata reader out of date");
   // No |reason_| is saved in the version 6 file format.
   if (version_ == 6)
     return reason_ == SimpleIndex::INDEX_WRITE_REASON_MAX;
-  return (version_ == 7 || version_ == 8) &&
+  return (version_ == 7 || version_ == 8 || version_ == 9) &&
          reason_ < SimpleIndex::INDEX_WRITE_REASON_MAX;
 }
 

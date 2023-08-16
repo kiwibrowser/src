@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("dawn_overrides_with_defaults.gni")
+import("//build_overrides/build.gni")
 import("dawn_features.gni")
+import("dawn_overrides_with_defaults.gni")
 
 ###############################################################################
 # Template to produce a component for one of Dawn's libraries.
@@ -48,11 +49,11 @@ import("dawn_features.gni")
 template("dawn_component") {
   # Copy the target_name in the local scope so it doesn't get shadowed in the
   # definition of targets.
-  libname = target_name
+  name = target_name
 
   # The config that will apply to dependents of the shared library so they know
   # they should "import" the symbols
-  config("${libname}_shared_public_config") {
+  config("${name}_shared_public_config") {
     defines = [ "${invoker.DEFINE_PREFIX}_SHARED_LIBRARY" ]
 
     # Executable needs an rpath to find our shared libraries on OSX and Linux
@@ -62,13 +63,14 @@ template("dawn_component") {
         "@executable_path/",
       ]
     }
-    if (is_linux) {
+    if (is_linux && dawn_has_build) {
       configs = [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
     }
   }
 
-  shared_library("${libname}_shared") {
-    output_name = libname
+  shared_library("${name}_shared") {
+    # The "tool" for creating shared libraries will automatically add the "lib" prefix
+    output_name = name
 
     # Copy all variables except "configs", which has a default value
     forward_variables_from(invoker, "*", [ "configs" ])
@@ -80,7 +82,7 @@ template("dawn_component") {
     if (is_mac) {
       ldflags = [
         "-install_name",
-        "@rpath/${libname}.dylib",
+        "@rpath/lib${name}.dylib",
       ]
     }
 
@@ -88,7 +90,7 @@ template("dawn_component") {
     if (!defined(public_configs)) {
       public_configs = []
     }
-    public_configs += [ ":${libname}_shared_public_config" ]
+    public_configs += [ ":${name}_shared_public_config" ]
 
     # Tell sources of this library to export the symbols (and not import)
     if (!defined(defines)) {
@@ -96,16 +98,17 @@ template("dawn_component") {
     }
     defines += [ "${invoker.DEFINE_PREFIX}_IMPLEMENTATION" ]
 
-    # TODO(cwallez@chromium.org): Remove this when we are sure the bots have
-    # been clobbered. This is necessary because when moving generated files
-    # around we ended up with bad generated files in cached build
-    # directories that get picked up because of the default inclusion of
-    # target_gen_dir as an include directory.
-    configs -= [ "//build/config/compiler:default_include_dirs" ]
+    # Chromium adds a config that uses a special linker script that removes
+    # all symbols except JNI ones. Remove this config so that our
+    # shared_library symbols are visible. This matches what Chromium's
+    # component template does.
+    if (build_with_chromium && is_android) {
+      configs -= [ "//build/config/android:hide_all_but_jni_onload" ]
+    }
   }
 
-  static_library("${libname}_static") {
-    output_name = libname
+  static_library("${name}_static") {
+    output_name = name + "_static"
 
     complete_static_lib = dawn_complete_static_libs
 
@@ -114,24 +117,13 @@ template("dawn_component") {
     if (defined(invoker.configs)) {
       configs += invoker.configs
     }
-
-    # TODO(cwallez@chromium.org): Remove this when we are sure the bots have
-    # been clobbered. This is necessary because when moving generated files
-    # around we ended up with bad generated files in cached build
-    # directories that get picked up because of the default inclusion of
-    # target_gen_dir as an include directory.
-    configs -= [ "//build/config/compiler:default_include_dirs" ]
   }
 
-  group(libname) {
+  group(name) {
     if (is_component_build) {
-      public_deps = [
-        ":${libname}_shared",
-      ]
+      public_deps = [ ":${name}_shared" ]
     } else {
-      public_deps = [
-        ":${libname}_static",
-      ]
+      public_deps = [ ":${name}_static" ]
     }
   }
 }

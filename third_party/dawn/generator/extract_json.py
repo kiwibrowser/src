@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # Copyright 2018 The Dawn Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     output_dir = sys.argv[2]
 
-    for (name, content) in files.iteritems():
+    for (name, content) in files.items():
         output_file = output_dir + os.path.sep + name
 
         directory = os.path.dirname(output_file)

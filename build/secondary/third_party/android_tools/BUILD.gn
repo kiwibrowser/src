@@ -127,7 +127,7 @@ if (enable_java_templates) {
 
   # TODO(dgn): Use the POM files instead of hardcoding the dependencies.
   gms_path = "$default_extras_android_sdk_root/extras/google/m2repository/com/google/android/gms"
-  gms_version = "11.2.0"
+  gms_version = "12.0.1"
 
   android_aar_prebuilt("google_play_services_basement_java") {
     deps = [
@@ -167,6 +167,7 @@ if (enable_java_templates) {
     deps = [
       ":google_play_services_base_java",
       ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
     ]
     _lib_name = "play-services-auth-base"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
@@ -175,11 +176,26 @@ if (enable_java_templates) {
         [ "${target_gen_dir}/google_play_services_basement_java/proguard.txt" ]
   }
 
+  android_aar_prebuilt("google_play_services_auth_api_phone_java") {
+    deps = [
+      ":google_play_services_base_java",
+      ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
+    ]
+    _lib_name = "play-services-auth-api-phone"
+    aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
+    info_path = "//build/secondary/third_party/android_tools/$target_name.info"
+    proguard_configs =
+        [ "${target_gen_dir}/google_play_services_basement_java/proguard.txt" ]
+  }
+
   android_aar_prebuilt("google_play_services_auth_java") {
     deps = [
+      ":google_play_services_auth_api_phone_java",
       ":google_play_services_auth_base_java",
       ":google_play_services_base_java",
       ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
     ]
     _lib_name = "play-services-auth"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
@@ -193,8 +209,22 @@ if (enable_java_templates) {
       ":android_support_v7_mediarouter_java",
       ":google_play_services_base_java",
       ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
     ]
     _lib_name = "play-services-cast"
+    aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
+    info_path = "//build/secondary/third_party/android_tools/$target_name.info"
+    proguard_configs =
+        [ "${target_gen_dir}/google_play_services_basement_java/proguard.txt" ]
+  }
+
+  android_aar_prebuilt("google_play_services_cast_framework_java") {
+    deps = [
+      ":google_play_services_base_java",
+      ":google_play_services_basement_java",
+      ":google_play_services_cast_java",
+    ]
+    _lib_name = "play-services-cast-framework"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
     info_path = "//build/secondary/third_party/android_tools/$target_name.info"
     proguard_configs =
@@ -205,6 +235,7 @@ if (enable_java_templates) {
     deps = [
       ":google_play_services_base_java",
       ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
     ]
     _lib_name = "play-services-iid"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
@@ -230,6 +261,7 @@ if (enable_java_templates) {
     deps = [
       ":google_play_services_base_java",
       ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
     ]
     _lib_name = "play-services-location"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
@@ -257,6 +289,19 @@ if (enable_java_templates) {
       ":google_play_services_basement_java",
     ]
     _lib_name = "play-services-vision-common"
+    aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
+    info_path = "//build/secondary/third_party/android_tools/$target_name.info"
+    proguard_configs =
+        [ "${target_gen_dir}/google_play_services_basement_java/proguard.txt" ]
+  }
+
+  android_aar_prebuilt("google_play_services_fido_java") {
+    deps = [
+      ":google_play_services_base_java",
+      ":google_play_services_basement_java",
+      ":google_play_services_tasks_java",
+    ]
+    _lib_name = "play-services-fido"
     aar_path = "$gms_path/$_lib_name/$gms_version/$_lib_name-$gms_version.aar"
     info_path = "//build/secondary/third_party/android_tools/$target_name.info"
     proguard_configs =

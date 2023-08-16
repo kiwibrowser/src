@@ -448,13 +448,17 @@ void URLRequestHttpJob::Start() {
       http_user_agent_settings_ ?
           http_user_agent_settings_->GetUserAgent() : std::string());
 
-  if (request_info_.url.host().find("addons.opera.com") != std::string::npos)
+  if (request_info_.url.host().find("facebook.com") != std::string::npos || request_info_.url.host().find("fbcdn") != std::string::npos || request_info_.url.host().find("fbcdn.net") != std::string::npos)
   {
-     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36 OPR/60.0.3255.27");
+     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Kiwi Chrome/68.0.3438.0 Safari/537.36");
+  }
+  else if (request_info_.url.host().find("addons.opera.com") != std::string::npos)
+  {
+     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36 OPR/60.0.3255.27 (Edition developer)");
   }
   else if (request_info_.url.host().find("chrome.google.com") != std::string::npos)
   {
-     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.90 Safari/537.36");
+     request_info_.extra_headers.SetHeader(HttpRequestHeaders::kUserAgent, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.81 Safari/537.36");
   }
   else if (request_info_.url.host().find("news.google.com") != std::string::npos)
   {
@@ -467,6 +471,10 @@ void URLRequestHttpJob::Start() {
 
   if (request_info_.url.host().find("amazon") != std::string::npos && request_info_.url.query().find("kbdirect") != std::string::npos) {
      request_info_.extra_headers.RemoveHeader(HttpRequestHeaders::kReferer);
+  }
+
+  if (request_info_.url.host().find("meet.google.com") != std::string::npos) {
+     request_info_.extra_headers.RemoveHeader("x-goog-meeting-botguardid");
   }
 
   AddExtraHeaders();

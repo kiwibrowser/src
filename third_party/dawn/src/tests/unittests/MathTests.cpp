@@ -16,6 +16,8 @@
 
 #include "common/Math.h"
 
+#include <cmath>
+
 // Tests for ScanForward
 TEST(Math, ScanForward) {
     // Test extrema
@@ -31,15 +33,65 @@ TEST(Math, ScanForward) {
 // Tests for Log2
 TEST(Math, Log2) {
     // Test extrema
-    ASSERT_EQ(Log2(1), 0u);
-    ASSERT_EQ(Log2(0xFFFFFFFF), 31u);
+    ASSERT_EQ(Log2(1u), 0u);
+    ASSERT_EQ(Log2(0xFFFFFFFFu), 31u);
+    ASSERT_EQ(Log2(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF)), 63u);
+
+    static_assert(ConstexprLog2(1u) == 0u, "");
+    static_assert(ConstexprLog2(0xFFFFFFFFu) == 31u, "");
+    static_assert(ConstexprLog2(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF)) == 63u, "");
 
     // Test boundary between two logs
-    ASSERT_EQ(Log2(0x80000000), 31u);
-    ASSERT_EQ(Log2(0x7FFFFFFF), 30u);
+    ASSERT_EQ(Log2(0x80000000u), 31u);
+    ASSERT_EQ(Log2(0x7FFFFFFFu), 30u);
+    ASSERT_EQ(Log2(static_cast<uint64_t>(0x8000000000000000)), 63u);
+    ASSERT_EQ(Log2(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF)), 62u);
 
-    ASSERT_EQ(Log2(16), 4u);
-    ASSERT_EQ(Log2(15), 3u);
+    static_assert(ConstexprLog2(0x80000000u) == 31u, "");
+    static_assert(ConstexprLog2(0x7FFFFFFFu) == 30u, "");
+    static_assert(ConstexprLog2(static_cast<uint64_t>(0x8000000000000000)) == 63u, "");
+    static_assert(ConstexprLog2(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF)) == 62u, "");
+
+    ASSERT_EQ(Log2(16u), 4u);
+    ASSERT_EQ(Log2(15u), 3u);
+
+    static_assert(ConstexprLog2(16u) == 4u, "");
+    static_assert(ConstexprLog2(15u) == 3u, "");
+}
+
+// Tests for Log2Ceil
+TEST(Math, Log2Ceil) {
+    // Test extrema
+    ASSERT_EQ(Log2Ceil(1u), 0u);
+    ASSERT_EQ(Log2Ceil(0xFFFFFFFFu), 32u);
+    ASSERT_EQ(Log2Ceil(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF)), 64u);
+
+    static_assert(ConstexprLog2Ceil(1u) == 0u, "");
+    static_assert(ConstexprLog2Ceil(0xFFFFFFFFu) == 32u, "");
+    static_assert(ConstexprLog2Ceil(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF)) == 64u, "");
+
+    // Test boundary between two logs
+    ASSERT_EQ(Log2Ceil(0x80000001u), 32u);
+    ASSERT_EQ(Log2Ceil(0x80000000u), 31u);
+    ASSERT_EQ(Log2Ceil(0x7FFFFFFFu), 31u);
+    ASSERT_EQ(Log2Ceil(static_cast<uint64_t>(0x8000000000000001)), 64u);
+    ASSERT_EQ(Log2Ceil(static_cast<uint64_t>(0x8000000000000000)), 63u);
+    ASSERT_EQ(Log2Ceil(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF)), 63u);
+
+    static_assert(ConstexprLog2Ceil(0x80000001u) == 32u, "");
+    static_assert(ConstexprLog2Ceil(0x80000000u) == 31u, "");
+    static_assert(ConstexprLog2Ceil(0x7FFFFFFFu) == 31u, "");
+    static_assert(ConstexprLog2Ceil(static_cast<uint64_t>(0x8000000000000001)) == 64u, "");
+    static_assert(ConstexprLog2Ceil(static_cast<uint64_t>(0x8000000000000000)) == 63u, "");
+    static_assert(ConstexprLog2Ceil(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF)) == 63u, "");
+
+    ASSERT_EQ(Log2Ceil(17u), 5u);
+    ASSERT_EQ(Log2Ceil(16u), 4u);
+    ASSERT_EQ(Log2Ceil(15u), 4u);
+
+    static_assert(ConstexprLog2Ceil(17u) == 5u, "");
+    static_assert(ConstexprLog2Ceil(16u) == 4u, "");
+    static_assert(ConstexprLog2Ceil(15u) == 4u, "");
 }
 
 // Tests for IsPowerOfTwo
@@ -50,6 +102,19 @@ TEST(Math, IsPowerOfTwo) {
 
     ASSERT_TRUE(IsPowerOfTwo(0x8000000));
     ASSERT_FALSE(IsPowerOfTwo(0x8000400));
+}
+
+// Tests for NextPowerOfTwo
+TEST(Math, NextPowerOfTwo) {
+    // Test extrema
+    ASSERT_EQ(NextPowerOfTwo(0), 1ull);
+    ASSERT_EQ(NextPowerOfTwo(0x7FFFFFFFFFFFFFFF), 0x8000000000000000);
+
+    // Test boundary between powers-of-two.
+    ASSERT_EQ(NextPowerOfTwo(31), 32ull);
+    ASSERT_EQ(NextPowerOfTwo(33), 64ull);
+
+    ASSERT_EQ(NextPowerOfTwo(32), 32ull);
 }
 
 // Tests for AlignPtr
@@ -64,7 +129,7 @@ TEST(Math, AlignPtr) {
 
         ASSERT_GE(aligned - unaligned, 0);
         ASSERT_LT(static_cast<size_t>(aligned - unaligned), kTestAlignment);
-        ASSERT_EQ(reinterpret_cast<uintptr_t>(aligned) & (kTestAlignment -1), 0u);
+        ASSERT_EQ(reinterpret_cast<uintptr_t>(aligned) & (kTestAlignment - 1), 0u);
     }
 }
 
@@ -132,4 +197,62 @@ TEST(Math, IsAligned) {
     for (uint32_t i = 1; i < 64; ++i) {
         ASSERT_FALSE(IsAligned(64 + i, 64));
     }
+}
+
+// Tests for float32 to float16 conversion
+TEST(Math, Float32ToFloat16) {
+    ASSERT_EQ(Float32ToFloat16(0.0f), 0x0000);
+    ASSERT_EQ(Float32ToFloat16(-0.0f), 0x8000);
+
+    ASSERT_EQ(Float32ToFloat16(INFINITY), 0x7C00);
+    ASSERT_EQ(Float32ToFloat16(-INFINITY), 0xFC00);
+
+    // Check that NaN is converted to a value in one of the float16 NaN ranges
+    uint16_t nan16 = Float32ToFloat16(NAN);
+    ASSERT_TRUE(nan16 > 0xFC00 || (nan16 < 0x8000 && nan16 > 0x7C00));
+
+    ASSERT_EQ(Float32ToFloat16(1.0f), 0x3C00);
+}
+
+// Tests for IsFloat16NaN
+TEST(Math, IsFloat16NaN) {
+    ASSERT_FALSE(IsFloat16NaN(0u));
+    ASSERT_FALSE(IsFloat16NaN(0u));
+    ASSERT_FALSE(IsFloat16NaN(Float32ToFloat16(1.0f)));
+    ASSERT_FALSE(IsFloat16NaN(Float32ToFloat16(INFINITY)));
+    ASSERT_FALSE(IsFloat16NaN(Float32ToFloat16(-INFINITY)));
+
+    ASSERT_TRUE(IsFloat16NaN(Float32ToFloat16(INFINITY) + 1));
+    ASSERT_TRUE(IsFloat16NaN(Float32ToFloat16(-INFINITY) + 1));
+    ASSERT_TRUE(IsFloat16NaN(0x7FFF));
+    ASSERT_TRUE(IsFloat16NaN(0xFFFF));
+}
+
+// Tests for SRGBToLinear
+TEST(Math, SRGBToLinear) {
+    ASSERT_EQ(SRGBToLinear(0.0f), 0.0f);
+    ASSERT_EQ(SRGBToLinear(1.0f), 1.0f);
+
+    ASSERT_EQ(SRGBToLinear(-1.0f), 0.0f);
+    ASSERT_EQ(SRGBToLinear(2.0f), 1.0f);
+
+    ASSERT_FLOAT_EQ(SRGBToLinear(0.5f), 0.21404114f);
+}
+
+// Tests for RoundUp
+TEST(Math, RoundUp) {
+    ASSERT_EQ(RoundUp(2, 2), 2u);
+    ASSERT_EQ(RoundUp(2, 4), 4u);
+    ASSERT_EQ(RoundUp(6, 2), 6u);
+    ASSERT_EQ(RoundUp(8, 4), 8u);
+    ASSERT_EQ(RoundUp(12, 6), 12u);
+
+    ASSERT_EQ(RoundUp(3, 3), 3u);
+    ASSERT_EQ(RoundUp(3, 5), 5u);
+    ASSERT_EQ(RoundUp(5, 3), 6u);
+    ASSERT_EQ(RoundUp(9, 5), 10u);
+
+    // Test extrema
+    ASSERT_EQ(RoundUp(0x7FFFFFFFFFFFFFFFull, 0x8000000000000000ull), 0x8000000000000000ull);
+    ASSERT_EQ(RoundUp(1, 1), 1u);
 }

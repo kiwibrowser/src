@@ -26,7 +26,7 @@ namespace dawn_wire {
     class WireDeserializeAllocator : public DeserializeAllocator {
       public:
         WireDeserializeAllocator();
-        ~WireDeserializeAllocator();
+        virtual ~WireDeserializeAllocator();
 
         void* GetSpace(size_t size) override;
 

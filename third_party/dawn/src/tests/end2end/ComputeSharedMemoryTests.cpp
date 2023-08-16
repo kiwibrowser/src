@@ -14,7 +14,7 @@
 
 #include "tests/DawnTest.h"
 
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 #include <array>
 
@@ -26,47 +26,37 @@ class ComputeSharedMemoryTests : public DawnTest {
 };
 
 void ComputeSharedMemoryTests::BasicTest(const char* shader) {
-    auto bgl = utils::MakeBindGroupLayout(
-        device, {
-                    {0, dawn::ShaderStageBit::Compute, dawn::BindingType::StorageBuffer},
-                });
-
     // Set up shader and pipeline
-    auto module = utils::CreateShaderModule(device, dawn::ShaderStage::Compute, shader);
-    auto pl = utils::MakeBasicPipelineLayout(device, &bgl);
+    auto module = utils::CreateShaderModule(device, utils::SingleShaderStage::Compute, shader);
 
-    dawn::ComputePipelineDescriptor csDesc;
-    csDesc.layout = pl;
-
-    dawn::PipelineStageDescriptor computeStage;
-    computeStage.module = module;
-    computeStage.entryPoint = "main";
-    csDesc.computeStage = &computeStage;
-
-    dawn::ComputePipeline pipeline = device.CreateComputePipeline(&csDesc);
+    wgpu::ComputePipelineDescriptor csDesc;
+    csDesc.computeStage.module = module;
+    csDesc.computeStage.entryPoint = "main";
+    wgpu::ComputePipeline pipeline = device.CreateComputePipeline(&csDesc);
 
     // Set up dst storage buffer
-    dawn::BufferDescriptor dstDesc;
+    wgpu::BufferDescriptor dstDesc;
     dstDesc.size = sizeof(uint32_t);
-    dstDesc.usage = dawn::BufferUsageBit::Storage | dawn::BufferUsageBit::TransferSrc |
-                    dawn::BufferUsageBit::TransferDst;
-    dawn::Buffer dst = device.CreateBuffer(&dstDesc);
+    dstDesc.usage =
+        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+    wgpu::Buffer dst = device.CreateBuffer(&dstDesc);
 
     const uint32_t zero = 0;
-    dst.SetSubData(0, sizeof(zero), &zero);
+    queue.WriteBuffer(dst, 0, &zero, sizeof(zero));
 
     // Set up bind group and issue dispatch
-    dawn::BindGroup bindGroup = utils::MakeBindGroup(device, bgl, {
-        {0, dst, 0, sizeof(uint32_t)},
-    });
+    wgpu::BindGroup bindGroup = utils::MakeBindGroup(device, pipeline.GetBindGroupLayout(0),
+                                                     {
+                                                         {0, dst, 0, sizeof(uint32_t)},
+                                                     });
 
-    dawn::CommandBuffer commands;
+    wgpu::CommandBuffer commands;
     {
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::ComputePassEncoder pass = encoder.BeginComputePass();
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
         pass.SetPipeline(pipeline);
-        pass.SetBindGroup(0, bindGroup, 0, nullptr);
-        pass.Dispatch(1, 1, 1);
+        pass.SetBindGroup(0, bindGroup);
+        pass.Dispatch(1);
         pass.EndPass();
 
         commands = encoder.Finish();
@@ -80,9 +70,6 @@ void ComputeSharedMemoryTests::BasicTest(const char* shader) {
 
 // Basic shared memory test
 TEST_P(ComputeSharedMemoryTests, Basic) {
-    // See https://bugs.chromium.org/p/dawn/issues/detail?id=159
-    DAWN_SKIP_TEST_IF(IsD3D12() && IsNvidia());
-
     BasicTest(R"(
         #version 450
         const uint kTileSize = 4;
@@ -111,7 +98,7 @@ TEST_P(ComputeSharedMemoryTests, Basic) {
 }
 
 DAWN_INSTANTIATE_TEST(ComputeSharedMemoryTests,
-                     D3D12Backend,
-                     MetalBackend,
-                     OpenGLBackend,
-                     VulkanBackend);
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

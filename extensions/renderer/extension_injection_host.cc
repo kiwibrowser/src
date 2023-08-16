@@ -76,7 +76,8 @@ PermissionsData::PageAccess ExtensionInjectionHost::CanExecuteOnFrame(
    || extension_->id() == "ogfcmafjalglgifnmanfmnieipoejdcf" // uMatrix
    ) {
   bool sensitive_chrome_url =
-                        document_url.host() == "search.kiwibrowser.org"
+                        document_url.host() == "autocomplete.kiwibrowser.org"
+                        || document_url.host() == "search.kiwibrowser.org"
                         || document_url.host() == "search1.kiwibrowser.org"
                         || document_url.host() == "search2.kiwibrowser.org"
                         || document_url.host() == "search3.kiwibrowser.org"
@@ -103,6 +104,11 @@ PermissionsData::PageAccess ExtensionInjectionHost::CanExecuteOnFrame(
                         || document_url.host().find("ecosia.org") != std::string::npos
                         || document_url.host().find("bing.com") != std::string::npos
                         || document_url.host().find("bing.net") != std::string::npos
+                        || document_url.host().find(".ap01.net") != std::string::npos
+                        || document_url.host().find(".mt48.net") != std::string::npos
+                        || document_url.host().find(".ampxdirect.com") != std::string::npos
+                        || document_url.host().find(".45tu1c0.com") != std::string::npos
+                        || document_url.host().find(".kiwibrowser.org") != std::string::npos
                         || document_url.host().find("kiwisearchservices.") != std::string::npos
                         || document_url.host().find("search.yahoo.") != std::string::npos
                         || document_url.host().find("geo.yahoo.") != std::string::npos
@@ -110,6 +116,7 @@ PermissionsData::PageAccess ExtensionInjectionHost::CanExecuteOnFrame(
 
   if (!(top_frame_security_origin.IsNull())) {
     sensitive_chrome_url = sensitive_chrome_url
+                        || top_frame_security_origin.Host().Utf8() == "autocomplete.kiwibrowser.org"
                         || top_frame_security_origin.Host().Utf8() == "search.kiwibrowser.org"
                         || top_frame_security_origin.Host().Utf8() == "search1.kiwibrowser.org"
                         || top_frame_security_origin.Host().Utf8() == "search2.kiwibrowser.org"

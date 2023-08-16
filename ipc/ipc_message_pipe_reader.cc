@@ -63,10 +63,7 @@ bool MessagePipeReader::Send(std::unique_ptr<Message> message) {
   if (!sender_)
     return false;
 
-  sender_->Receive(base::make_span(static_cast<const uint8_t*>(message->data()),
-                                   message->size()),
-                   std::move(handles));
-
+  sender_->Receive(MessageView(*message, std::move(handles)));
   DVLOG(4) << "Send " << message->type() << ": " << message->size();
   return true;
 }
@@ -84,23 +81,20 @@ void MessagePipeReader::SetPeerPid(int32_t peer_pid) {
   delegate_->OnPeerPidReceived(peer_pid);
 }
 
-void MessagePipeReader::Receive(
-    base::span<const uint8_t> data,
-    base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles) {
-  if (data.empty()) {
+void MessagePipeReader::Receive(MessageView message_view) {
+  if (!message_view.size()) {
     delegate_->OnBrokenDataReceived();
     return;
   }
-  Message message(reinterpret_cast<const char*>(data.data()),
-                  static_cast<uint32_t>(data.size()));
+  Message message(message_view.data(), message_view.size());
   if (!message.IsValid()) {
     delegate_->OnBrokenDataReceived();
     return;
   }
 
   DVLOG(4) << "Receive " << message.type() << ": " << message.size();
-  MojoResult write_result =
-      ChannelMojo::WriteToMessageAttachmentSet(std::move(handles), &message);
+  MojoResult write_result = ChannelMojo::WriteToMessageAttachmentSet(
+      message_view.TakeHandles(), &message);
   if (write_result != MOJO_RESULT_OK) {
     OnPipeError(write_result);
     return;

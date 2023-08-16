@@ -19,9 +19,12 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/metrics/user_metrics.h"
 #include "base/rand_util.h"
+#include "base/android/sys_utils.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
+#include "components/google/core/browser/google_pref_names.h"
 #include "components/data_use_measurement/core/data_use_user_data.h"
 #include "components/history/core/browser/in_memory_database.h"
 #include "components/history/core/browser/keyword_search_term.h"
@@ -37,6 +40,8 @@
 #include "components/strings/grit/components_strings.h"
 #include "components/url_formatter/url_formatter.h"
 #include "components/variations/net/variations_http_headers.h"
+#include "components/pref_registry/pref_registry_syncable.h"
+#include "components/prefs/pref_service.h"
 #include "net/base/escape.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_request_headers.h"
@@ -377,7 +382,9 @@ void SearchProvider::OnTemplateURLServiceChanged() {
   const TemplateURL* template_url = providers_.GetDefaultProviderURL();
   if (!template_url) {
     CancelFetcher(&default_fetcher_);
+    CancelFetcher(&bangs_fetcher_);
     default_results_.Clear();
+    bangs_results_.Clear();
     providers_.set(client()
                        ->GetTemplateURLService()
                        ->GetDefaultSearchProvider()
@@ -401,9 +408,11 @@ void SearchProvider::OnTemplateURLServiceChanged() {
 }
 
 void SearchProvider::OnURLFetchComplete(const net::URLFetcher* source) {
+  LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete";
   TRACE_EVENT0("omnibox", "SearchProvider::OnURLFetchComplete");
   DCHECK(!done_);
   const bool is_keyword = source == keyword_fetcher_.get();
+  const bool is_bangs = source == bangs_fetcher_.get();
 
   // Ensure the request succeeded and that the provider used is still available.
   // A verbatim match cannot be generated without this provider, causing errors.
@@ -420,12 +429,20 @@ void SearchProvider::OnURLFetchComplete(const net::URLFetcher* source) {
   // clear if the suggest server will send back sensible results to the
   // request we're constructing here for on-focus inputs.
   if (!input_.from_omnibox_focus() && request_succeeded) {
+    LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete - Request has succeeded";
+    if (is_keyword)
+      LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete - Request has succeeded (is_keyword)";
+    else if (is_bangs)
+      LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete - Request has succeeded (is_bangs)";
+    else
+      LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete - Request has succeeded (default)";
     std::unique_ptr<base::Value> data(
         SearchSuggestionParser::DeserializeJsonData(
             SearchSuggestionParser::ExtractJsonData(source)));
     if (data) {
+      LOG(ERROR) << "[Kiwi] SearchProvider::OnURLFetchComplete - We have data";
       SearchSuggestionParser::Results* results =
-          is_keyword ? &keyword_results_ : &default_results_;
+          is_keyword ? &keyword_results_ : (is_bangs ? &bangs_results_ : &default_results_);
       results_updated = ParseSuggestResults(*data, -1, is_keyword, results);
       if (results_updated)
         SortResults(is_keyword, results);
@@ -435,6 +452,8 @@ void SearchProvider::OnURLFetchComplete(const net::URLFetcher* source) {
   // Delete the fetcher now that we're done with it.
   if (is_keyword)
     keyword_fetcher_.reset();
+  else if (is_bangs)
+    bangs_fetcher_.reset();
   else
     default_fetcher_.reset();
 
@@ -447,12 +466,14 @@ void SearchProvider::OnURLFetchComplete(const net::URLFetcher* source) {
 void SearchProvider::StopSuggest() {
   CancelFetcher(&default_fetcher_);
   CancelFetcher(&keyword_fetcher_);
+  CancelFetcher(&bangs_fetcher_);
   timer_.Stop();
 }
 
 void SearchProvider::ClearAllResults() {
   keyword_results_.Clear();
   default_results_.Clear();
+  bangs_results_.Clear();
 }
 
 void SearchProvider::UpdateMatchContentsClass(
@@ -527,6 +548,7 @@ void SearchProvider::UpdateMatches() {
   // opening the dropdown (which we do not want to happen).
   if (!input_.from_omnibox_focus()) {
     PersistTopSuggestions(&default_results_);
+    PersistTopSuggestions(&bangs_results_);
     PersistTopSuggestions(&keyword_results_);
     ConvertResultsToAutocompleteMatches();
     EnforceConstraints();
@@ -541,7 +563,8 @@ void SearchProvider::UpdateMatches() {
 void SearchProvider::EnforceConstraints() {
   if (!matches_.empty() &&
       (default_results_.HasServerProvidedScores() ||
-       keyword_results_.HasServerProvidedScores())) {
+       keyword_results_.HasServerProvidedScores() ||
+       bangs_results_.HasServerProvidedScores())) {
     // These blocks attempt to repair undesirable behavior by suggested
     // relevances with minimal impact, preserving other suggested relevances.
     const TemplateURL* keyword_url = providers_.GetKeywordProviderURL();
@@ -566,8 +589,10 @@ void SearchProvider::EnforceConstraints() {
       // provider's navigation for "foo.com" or "foo.com/url_from_history".
       ApplyCalculatedSuggestRelevance(&keyword_results_.suggest_results);
       ApplyCalculatedSuggestRelevance(&default_results_.suggest_results);
+      ApplyCalculatedSuggestRelevance(&bangs_results_.suggest_results);
       default_results_.verbatim_relevance = -1;
       keyword_results_.verbatim_relevance = -1;
+      bangs_results_.verbatim_relevance = -1;
       ConvertResultsToAutocompleteMatches();
     }
     if (!is_extension_keyword &&
@@ -626,9 +651,17 @@ void SearchProvider::Run(bool query_is_private) {
       CreateSuggestFetcher(kKeywordProviderURLFetcherID,
                            providers_.GetKeywordProviderURL(), keyword_input_);
 
+  if (client()->GetPrefs()->GetInteger(prefs::kEnableServerSuggestions) > 0) {
+    if (!query_is_private) {
+      bangs_fetcher_ =
+          CreateBangsFetcher(kDefaultProviderURLFetcherID,
+                               providers_.GetDefaultProviderURL(), input_);
+    }
+  }
+
   // Both the above can fail if the providers have been modified or deleted
   // since the query began.
-  if (!default_fetcher_ && !keyword_fetcher_) {
+  if (!default_fetcher_ && !keyword_fetcher_ && !bangs_fetcher_) {
     UpdateDone();
     // We only need to update the listener if we're actually done.
     if (done_)
@@ -720,6 +753,8 @@ void SearchProvider::StartOrStopSuggestQuery(bool minimal_changes) {
        !default_results_.navigation_results.empty() ||
        !keyword_results_.suggest_results.empty() ||
        !keyword_results_.navigation_results.empty() ||
+       !bangs_results_.suggest_results.empty() ||
+       !bangs_results_.navigation_results.empty() ||
        (!done_ && input_.want_asynchronous_matches())))
     return;
 
@@ -829,6 +864,7 @@ void SearchProvider::UpdateAllOldResults(bool minimal_changes) {
   }
   UpdateOldResults(minimal_changes, &default_results_);
   UpdateOldResults(minimal_changes, &keyword_results_);
+  UpdateOldResults(minimal_changes, &bangs_results_);
 }
 
 void SearchProvider::PersistTopSuggestions(
@@ -898,9 +934,11 @@ std::unique_ptr<net::URLFetcher> SearchProvider::CreateSuggestFetcher(
     search_term_args.prefetch_query_type =
         base::UTF16ToUTF8(prefetch_data_.query_type);
   }
+
   GURL suggest_url(template_url->suggestions_url_ref().ReplaceSearchTerms(
       search_term_args,
       client()->GetTemplateURLService()->search_terms_data()));
+
   if (!suggest_url.is_valid())
     return nullptr;
 
@@ -913,6 +951,102 @@ std::unique_ptr<net::URLFetcher> SearchProvider::CreateSuggestFetcher(
     // Create the suggest URL again with the current page URL.
     suggest_url = GURL(template_url->suggestions_url_ref().ReplaceSearchTerms(
         search_term_args, template_url_service->search_terms_data()));
+  }
+
+  LogOmniboxSuggestRequest(REQUEST_SENT);
+
+  net::NetworkTrafficAnnotationTag traffic_annotation =
+      net::DefineNetworkTrafficAnnotation("omnibox_suggest", R"(
+        semantics {
+          sender: "Omnibox"
+          description:
+            "Chrome can provide search and navigation suggestions from the "
+            "currently-selected search provider in the omnibox dropdown, based "
+            "on user input."
+          trigger: "User typing in the omnibox."
+          data:
+            "The text typed into the address bar. Potentially other metadata, "
+            "such as the current cursor position or URL of the current page."
+          destination: WEBSITE
+        }
+        policy {
+          cookies_allowed: YES
+          cookies_store: "user"
+          setting:
+            "Users can control this feature via the 'Use a prediction service "
+            "to help complete searches and URLs typed in the address bar' "
+            "setting under 'Privacy'. The feature is enabled by default."
+          chrome_policy {
+            SearchSuggestEnabled {
+                policy_options {mode: MANDATORY}
+                SearchSuggestEnabled: false
+            }
+          }
+        })");
+  std::unique_ptr<net::URLFetcher> fetcher = net::URLFetcher::Create(
+      id, suggest_url, net::URLFetcher::GET, this, traffic_annotation);
+  data_use_measurement::DataUseUserData::AttachToFetcher(
+      fetcher.get(), data_use_measurement::DataUseUserData::OMNIBOX);
+  fetcher->SetRequestContext(client()->GetRequestContext());
+  fetcher->SetLoadFlags(net::LOAD_DO_NOT_SAVE_COOKIES);
+  // Add Chrome experiment state to the request headers.
+  net::HttpRequestHeaders headers;
+  // Note: It's OK to pass SignedIn::kNo if it's unknown, as it does not affect
+  // transmission of experiments coming from the variations server.
+  variations::AppendVariationHeaders(fetcher->GetOriginalURL(),
+                                     client()->IsOffTheRecord()
+                                         ? variations::InIncognito::kYes
+                                         : variations::InIncognito::kNo,
+                                     variations::SignedIn::kNo, &headers);
+  fetcher->SetExtraRequestHeaders(headers.ToString());
+  fetcher->Start();
+  return fetcher;
+}
+
+std::unique_ptr<net::URLFetcher> SearchProvider::CreateBangsFetcher(
+    int id,
+    const TemplateURL* template_url,
+    const AutocompleteInput& input) {
+  if (!template_url || template_url->suggestions_url().empty())
+    return nullptr;
+
+  // Bail if the suggestion URL is invalid with the given replacements.
+  TemplateURLRef::SearchTermsArgs search_term_args(input.text());
+  search_term_args.input_type = input.type();
+  search_term_args.cursor_position = input.cursor_position();
+  search_term_args.page_classification = input.current_page_classification();
+  // Session token and prefetch data required for answers.
+  search_term_args.session_token = GetSessionToken();
+  if (!prefetch_data_.full_query_text.empty()) {
+    search_term_args.prefetch_query =
+        base::UTF16ToUTF8(prefetch_data_.full_query_text);
+    search_term_args.prefetch_query_type =
+        base::UTF16ToUTF8(prefetch_data_.query_type);
+  }
+
+  TemplateURLData template_url_data;
+  template_url_data.SetShortName(base::ASCIIToUTF16("bangs"));
+  template_url_data.SetURL("{searchTerms}");
+  long firstInstallDate = base::android::SysUtils::FirstInstallDateFromJni();
+  template_url_data.suggestions_url = "https://autocomplete.kiwibrowser.org/suggest/?version=1&install_date=" + base::NumberToString(firstInstallDate) + "&q={searchTerms}";
+  template_url_data.id = SEARCH_ENGINE_KIWI;
+  TemplateURL bang_template_url(template_url_data);
+
+  GURL suggest_url(bang_template_url.suggestions_url_ref().ReplaceSearchTerms(
+      search_term_args,
+      client()->GetTemplateURLService()->search_terms_data()));
+
+  if (!suggest_url.is_valid())
+    return nullptr;
+
+  // We do not enable additional autocomplete for Bing & Yahoo
+  TemplateURLService* template_url_service = client()->GetTemplateURLService();
+  if (template_url_service) {
+    const TemplateURL* default_provider = client()->GetTemplateURLService()->GetDefaultSearchProvider();
+    if (default_provider) {
+      if (default_provider->data().prepopulate_id == 3 /* BING */ || default_provider->data().prepopulate_id == 2 /* YAHOO */ )
+        return nullptr;
+    }
   }
 
   LogOmniboxSuggestRequest(REQUEST_SENT);
@@ -1067,6 +1201,8 @@ void SearchProvider::ConvertResultsToAutocompleteMatches() {
                          keyword_results_.metadata, &map);
   AddSuggestResultsToMap(default_results_.suggest_results,
                          default_results_.metadata, &map);
+  AddSuggestResultsToMap(bangs_results_.suggest_results,
+                         bangs_results_.metadata, &map);
 
   ACMatches matches;
   for (MatchMap::const_iterator i(map.begin()); i != map.end(); ++i)
@@ -1074,6 +1210,7 @@ void SearchProvider::ConvertResultsToAutocompleteMatches() {
 
   AddNavigationResultsToMatches(keyword_results_.navigation_results, &matches);
   AddNavigationResultsToMatches(default_results_.navigation_results, &matches);
+  AddNavigationResultsToMatches(bangs_results_.navigation_results, &matches);
 
   // Now add the most relevant matches to |matches_|.  We take up to kMaxMatches
   // suggest/navsuggest matches, regardless of origin.  We always include in
@@ -1556,7 +1693,7 @@ AutocompleteMatch SearchProvider::NavigationToMatch(
 void SearchProvider::UpdateDone() {
   // We're done when the timer isn't running and there are no suggest queries
   // pending.
-  done_ = !timer_.IsRunning() && !default_fetcher_ && !keyword_fetcher_;
+  done_ = !timer_.IsRunning() && !default_fetcher_ && !keyword_fetcher_ && !bangs_fetcher_;
 }
 
 std::string SearchProvider::GetSessionToken() {

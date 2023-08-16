@@ -20,12 +20,13 @@
 
 namespace {
     int GLSLFastFuzzTask(const std::vector<uint32_t>& input) {
-        shaderc_spvc::Compiler compiler;
-        if (!compiler.IsValid()) {
+        shaderc_spvc::Context context;
+        if (!context.IsValid()) {
             return 0;
         }
 
-        DawnSPIRVCrossFuzzer::ExecuteWithSignalTrap([&compiler, &input]() {
+        DawnSPIRVCrossFuzzer::ExecuteWithSignalTrap([&context, &input]() {
+            shaderc_spvc::CompilationResult result;
             shaderc_spvc::CompileOptions options;
             options.SetSourceEnvironment(shaderc_target_env_webgpu, shaderc_env_version_webgpu);
             options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1);
@@ -33,13 +34,20 @@ namespace {
             // Using the options that are used by Dawn, they appear in ShaderModuleGL.cpp
             options.SetGLSLLanguageVersion(440);
             options.SetFixupClipspace(true);
-            compiler.CompileSpvToGlsl(input.data(), input.size(), options);
+            if (context.InitializeForGlsl(input.data(), input.size(), options) ==
+                shaderc_spvc_status_success) {
+                context.CompileShader(&result);
+            }
         });
 
         return 0;
     }
 
 }  // namespace
+
+extern "C" int LLVMFuzzerInitialize(int* argc, char*** argv) {
+    return 0;
+}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     return DawnSPIRVCrossFuzzer::Run(data, size, GLSLFastFuzzTask);

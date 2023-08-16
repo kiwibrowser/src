@@ -18,19 +18,24 @@
 #include "dawn_native/PipelineLayout.h"
 
 #include "common/vulkan_platform.h"
+#include "dawn_native/Error.h"
 
 namespace dawn_native { namespace vulkan {
 
     class Device;
 
-    class PipelineLayout : public PipelineLayoutBase {
+    class PipelineLayout final : public PipelineLayoutBase {
       public:
-        PipelineLayout(Device* device, const PipelineLayoutDescriptor* descriptor);
-        ~PipelineLayout();
+        static ResultOrError<PipelineLayout*> Create(Device* device,
+                                                     const PipelineLayoutDescriptor* descriptor);
 
         VkPipelineLayout GetHandle() const;
 
       private:
+        ~PipelineLayout() override;
+        using PipelineLayoutBase::PipelineLayoutBase;
+        MaybeError Initialize();
+
         VkPipelineLayout mHandle = VK_NULL_HANDLE;
     };
 

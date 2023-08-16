@@ -27,8 +27,10 @@ namespace dawn_native { namespace vulkan {
     class ComputePipeline;
     class Device;
     class PipelineLayout;
+    class QuerySet;
     class Queue;
     class RenderPipeline;
+    class ResourceHeap;
     class Sampler;
     class ShaderModule;
     class StagingBuffer;
@@ -45,8 +47,10 @@ namespace dawn_native { namespace vulkan {
         using ComputePipelineType = ComputePipeline;
         using DeviceType = Device;
         using PipelineLayoutType = PipelineLayout;
+        using QuerySetType = QuerySet;
         using QueueType = Queue;
         using RenderPipelineType = RenderPipeline;
+        using ResourceHeapType = ResourceHeap;
         using SamplerType = Sampler;
         using ShaderModuleType = ShaderModule;
         using StagingBufferType = StagingBuffer;

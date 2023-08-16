@@ -22,7 +22,7 @@ import("channel.gni")
 import("java_sources.gni")
 import("static_initializers.gni")
 
-manifest_package = "com.kiwibrowser.browser"
+manifest_package = "com.kiwibrowser.browser.classic"
 
 chrome_public_jinja_variables = default_chrome_public_jinja_variables +
                                 [ "manifest_package=$manifest_package" ]
@@ -74,6 +74,10 @@ jinja_template("chrome_modern_public_android_manifest") {
 
 jinja_template("monochrome_public_android_manifest") {
   input = "java/AndroidManifest_monochrome.xml"
+  includes = [
+    "//android_webview/apk/java/AndroidManifest.xml",
+    "java/AndroidManifest.xml",
+  ]
   output = monochrome_public_android_manifest
   variables = chrome_public_jinja_variables +
               monochrome_android_manifest_jinja_variables +
@@ -819,10 +823,6 @@ template("chrome_shared_library") {
 
     deps += [ "//chrome:chrome_android_core" ]
 
-    if (use_order_profiling) {
-      deps += [ "//tools/cygprofile" ]
-    }
-
     # See crbug.com/705088.
     if (target_cpu == "arm" && is_asan) {
       ldflags = [ "-Wl,--long-plt" ]
@@ -1033,9 +1033,6 @@ if (!android_64bit_target_cpu ||
     configs += [ "//build/config/android:hide_all_but_jni" ]
     if (use_lld) {
       configs += [ "//build/config/android:lld_pack_relocations" ]
-    }
-    if (is_android && use_order_profiling) {
-      deps += [ "//tools/cygprofile" ]
     }
 
     if (target_cpu != "mipsel" && target_cpu != "mips64el") {

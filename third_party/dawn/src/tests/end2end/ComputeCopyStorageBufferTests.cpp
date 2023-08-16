@@ -14,7 +14,7 @@
 
 #include "tests/DawnTest.h"
 
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 #include <array>
 
@@ -28,63 +28,53 @@ class ComputeCopyStorageBufferTests : public DawnTest {
 };
 
 void ComputeCopyStorageBufferTests::BasicTest(const char* shader) {
-    auto bgl = utils::MakeBindGroupLayout(
-        device, {
-                    {0, dawn::ShaderStageBit::Compute, dawn::BindingType::StorageBuffer},
-                    {1, dawn::ShaderStageBit::Compute, dawn::BindingType::StorageBuffer},
-                });
-
     // Set up shader and pipeline
-    auto module = utils::CreateShaderModule(device, dawn::ShaderStage::Compute, shader);
-    auto pl = utils::MakeBasicPipelineLayout(device, &bgl);
+    auto module = utils::CreateShaderModule(device, utils::SingleShaderStage::Compute, shader);
 
-    dawn::ComputePipelineDescriptor csDesc;
-    csDesc.layout = pl;
+    wgpu::ComputePipelineDescriptor csDesc;
+    csDesc.computeStage.module = module;
+    csDesc.computeStage.entryPoint = "main";
 
-    dawn::PipelineStageDescriptor computeStage;
-    computeStage.module = module;
-    computeStage.entryPoint = "main";
-    csDesc.computeStage = &computeStage;
-
-    dawn::ComputePipeline pipeline = device.CreateComputePipeline(&csDesc);
+    wgpu::ComputePipeline pipeline = device.CreateComputePipeline(&csDesc);
 
     // Set up src storage buffer
-    dawn::BufferDescriptor srcDesc;
+    wgpu::BufferDescriptor srcDesc;
     srcDesc.size = kNumUints * sizeof(uint32_t);
-    srcDesc.usage = dawn::BufferUsageBit::Storage | dawn::BufferUsageBit::TransferSrc |
-                    dawn::BufferUsageBit::TransferDst;
-    dawn::Buffer src = device.CreateBuffer(&srcDesc);
+    srcDesc.usage =
+        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+    wgpu::Buffer src = device.CreateBuffer(&srcDesc);
 
     std::array<uint32_t, kNumUints> expected;
     for (uint32_t i = 0; i < kNumUints; ++i) {
         expected[i] = (i + 1u) * 0x11111111u;
     }
-    src.SetSubData(0, sizeof(expected), expected.data());
+    queue.WriteBuffer(src, 0, expected.data(), sizeof(expected));
     EXPECT_BUFFER_U32_RANGE_EQ(expected.data(), src, 0, kNumUints);
 
     // Set up dst storage buffer
-    dawn::BufferDescriptor dstDesc;
+    wgpu::BufferDescriptor dstDesc;
     dstDesc.size = kNumUints * sizeof(uint32_t);
-    dstDesc.usage = dawn::BufferUsageBit::Storage | dawn::BufferUsageBit::TransferSrc |
-                    dawn::BufferUsageBit::TransferDst;
-    dawn::Buffer dst = device.CreateBuffer(&dstDesc);
+    dstDesc.usage =
+        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
+    wgpu::Buffer dst = device.CreateBuffer(&dstDesc);
 
     std::array<uint32_t, kNumUints> zero{};
-    dst.SetSubData(0, sizeof(zero), zero.data());
+    queue.WriteBuffer(dst, 0, zero.data(), sizeof(zero));
 
     // Set up bind group and issue dispatch
-    dawn::BindGroup bindGroup = utils::MakeBindGroup(device, bgl, {
-        {0, src, 0, kNumUints * sizeof(uint32_t)},
-        {1, dst, 0, kNumUints * sizeof(uint32_t)},
-    });
+    wgpu::BindGroup bindGroup = utils::MakeBindGroup(device, pipeline.GetBindGroupLayout(0),
+                                                     {
+                                                         {0, src, 0, kNumUints * sizeof(uint32_t)},
+                                                         {1, dst, 0, kNumUints * sizeof(uint32_t)},
+                                                     });
 
-    dawn::CommandBuffer commands;
+    wgpu::CommandBuffer commands;
     {
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-        dawn::ComputePassEncoder pass = encoder.BeginComputePass();
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
         pass.SetPipeline(pipeline);
-        pass.SetBindGroup(0, bindGroup, 0, nullptr);
-        pass.Dispatch(kInstances, 1, 1);
+        pass.SetBindGroup(0, bindGroup);
+        pass.Dispatch(kInstances);
         pass.EndPass();
 
         commands = encoder.Finish();
@@ -97,9 +87,6 @@ void ComputeCopyStorageBufferTests::BasicTest(const char* shader) {
 
 // Test that a trivial compute-shader memcpy implementation works.
 TEST_P(ComputeCopyStorageBufferTests, SizedArrayOfBasic) {
-    // TODO(cwallez@chromium.org): Fails on D3D12, could be a spirv-cross issue?
-    DAWN_SKIP_TEST_IF(IsD3D12());
-
     BasicTest(R"(
         #version 450
         #define kInstances 4
@@ -114,9 +101,6 @@ TEST_P(ComputeCopyStorageBufferTests, SizedArrayOfBasic) {
 
 // Test that a slightly-less-trivial compute-shader memcpy implementation works.
 TEST_P(ComputeCopyStorageBufferTests, SizedArrayOfStruct) {
-    // TODO(kainino@chromium.org): Fails on D3D12. Probably due to a limitation in SPIRV-Cross?
-    DAWN_SKIP_TEST_IF(IsD3D12());
-
     BasicTest(R"(
         #version 450
         #define kInstances 4
@@ -134,9 +118,6 @@ TEST_P(ComputeCopyStorageBufferTests, SizedArrayOfStruct) {
 
 // Test that a trivial compute-shader memcpy implementation works.
 TEST_P(ComputeCopyStorageBufferTests, UnsizedArrayOfBasic) {
-    // TODO(cwallez@chromium.org): Fails on D3D12, could be a spirv-cross issue?
-    DAWN_SKIP_TEST_IF(IsD3D12());
-
     BasicTest(R"(
         #version 450
         #define kInstances 4
@@ -192,7 +173,7 @@ TEST_P(ComputeCopyStorageBufferTests, DISABLED_UnsizedDescriptorArray) {
 }
 
 DAWN_INSTANTIATE_TEST(ComputeCopyStorageBufferTests,
-                     D3D12Backend,
-                     MetalBackend,
-                     OpenGLBackend,
-                     VulkanBackend);
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

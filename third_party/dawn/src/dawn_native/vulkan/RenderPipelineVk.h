@@ -18,23 +18,30 @@
 #include "dawn_native/RenderPipeline.h"
 
 #include "common/vulkan_platform.h"
+#include "dawn_native/Error.h"
 
 namespace dawn_native { namespace vulkan {
 
     class Device;
 
-    class RenderPipeline : public RenderPipelineBase {
+    class RenderPipeline final : public RenderPipelineBase {
       public:
-        RenderPipeline(Device* device, const RenderPipelineDescriptor* descriptor);
-        ~RenderPipeline();
+        static ResultOrError<RenderPipeline*> Create(Device* device,
+                                                     const RenderPipelineDescriptor* descriptor);
 
         VkPipeline GetHandle() const;
 
       private:
+        ~RenderPipeline() override;
+        using RenderPipelineBase::RenderPipelineBase;
+        MaybeError Initialize(const RenderPipelineDescriptor* descriptor);
+
+        struct PipelineVertexInputStateCreateInfoTemporaryAllocations {
+            std::array<VkVertexInputBindingDescription, kMaxVertexBuffers> bindings;
+            std::array<VkVertexInputAttributeDescription, kMaxVertexAttributes> attributes;
+        };
         VkPipelineVertexInputStateCreateInfo ComputeVertexInputDesc(
-            const VertexInputDescriptor* vertexInput,
-            std::array<VkVertexInputBindingDescription, kMaxVertexBuffers>* mBindings,
-            std::array<VkVertexInputAttributeDescription, kMaxVertexAttributes>* mAttributes);
+            PipelineVertexInputStateCreateInfoTemporaryAllocations* temporaryAllocations);
 
         VkPipeline mHandle = VK_NULL_HANDLE;
     };

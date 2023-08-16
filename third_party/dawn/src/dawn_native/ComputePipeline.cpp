@@ -19,27 +19,38 @@
 
 namespace dawn_native {
 
+    namespace {
+        RequiredBufferSizes ComputeMinBufferSizes(const ComputePipelineDescriptor* descriptor) {
+            return descriptor->computeStage.module->ComputeRequiredBufferSizesForLayout(
+                descriptor->layout);
+        }
+    }  // anonymous namespace
+
     MaybeError ValidateComputePipelineDescriptor(DeviceBase* device,
                                                  const ComputePipelineDescriptor* descriptor) {
         if (descriptor->nextInChain != nullptr) {
             return DAWN_VALIDATION_ERROR("nextInChain must be nullptr");
         }
 
-        DAWN_TRY(device->ValidateObject(descriptor->layout));
-        DAWN_TRY(ValidatePipelineStageDescriptor(device, descriptor->computeStage,
-                                                 descriptor->layout, dawn::ShaderStage::Compute));
+        if (descriptor->layout != nullptr) {
+            DAWN_TRY(device->ValidateObject(descriptor->layout));
+        }
+
+        DAWN_TRY(ValidateProgrammableStageDescriptor(
+            device, &descriptor->computeStage, descriptor->layout, SingleShaderStage::Compute));
         return {};
     }
 
     // ComputePipelineBase
 
     ComputePipelineBase::ComputePipelineBase(DeviceBase* device,
-                                             const ComputePipelineDescriptor* descriptor,
-                                             bool blueprint)
-        : PipelineBase(device, descriptor->layout, dawn::ShaderStageBit::Compute),
-          mModule(descriptor->computeStage->module),
-          mEntryPoint(descriptor->computeStage->entryPoint),
-          mIsBlueprint(blueprint) {
+                                             const ComputePipelineDescriptor* descriptor)
+        : PipelineBase(device,
+                       descriptor->layout,
+                       wgpu::ShaderStage::Compute,
+                       ComputeMinBufferSizes(descriptor)),
+          mModule(descriptor->computeStage.module),
+          mEntryPoint(descriptor->computeStage.entryPoint) {
     }
 
     ComputePipelineBase::ComputePipelineBase(DeviceBase* device, ObjectBase::ErrorTag tag)
@@ -48,7 +59,7 @@ namespace dawn_native {
 
     ComputePipelineBase::~ComputePipelineBase() {
         // Do not uncache the actual cached object if we are a blueprint
-        if (!mIsBlueprint && !IsError()) {
+        if (IsCachedReference()) {
             GetDevice()->UncacheComputePipeline(this);
         }
     }

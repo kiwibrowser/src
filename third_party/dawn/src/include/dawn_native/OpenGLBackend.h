@@ -15,6 +15,7 @@
 #ifndef DAWNNATIVE_OPENGLBACKEND_H_
 #define DAWNNATIVE_OPENGLBACKEND_H_
 
+#include <dawn/dawn_wsi.h>
 #include <dawn_native/DawnNative.h>
 
 namespace dawn_native { namespace opengl {
@@ -24,6 +25,12 @@ namespace dawn_native { namespace opengl {
 
         void* (*getProc)(const char*);
     };
+
+    using PresentCallback = void (*)(void*);
+    DAWN_NATIVE_EXPORT DawnSwapChainImplementation
+    CreateNativeSwapChainImpl(WGPUDevice device, PresentCallback present, void* presentUserdata);
+    DAWN_NATIVE_EXPORT WGPUTextureFormat
+    GetNativeSwapChainPreferredFormat(const DawnSwapChainImplementation* swapChain);
 
 }}  // namespace dawn_native::opengl
 

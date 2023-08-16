@@ -35,7 +35,8 @@ namespace dawn_native { namespace d3d12 {
         ~PlatformFunctions();
 
         MaybeError LoadFunctions();
-        bool isPIXEventRuntimeLoaded() const;
+        bool IsPIXEventRuntimeLoaded() const;
+        bool IsDXCAvailable() const;
 
         // Functions from d3d12.dll
         PFN_D3D12_CREATE_DEVICE d3d12CreateDevice = nullptr;
@@ -58,6 +59,12 @@ namespace dawn_native { namespace d3d12 {
                                                           _COM_Outptr_ void** ppFactory);
         PFN_CREATE_DXGI_FACTORY2 createDxgiFactory2 = nullptr;
 
+        // Functions from dxcompiler.dll
+        using PFN_DXC_CREATE_INSTANCE = HRESULT(WINAPI*)(REFCLSID rclsid,
+                                                         REFIID riid,
+                                                         _COM_Outptr_ void** ppCompiler);
+        PFN_DXC_CREATE_INSTANCE dxcCreateInstance = nullptr;
+
         // Functions from d3d3compiler.dll
         pD3DCompile d3dCompile = nullptr;
 
@@ -77,15 +84,24 @@ namespace dawn_native { namespace d3d12 {
 
         PFN_SET_MARKER_ON_COMMAND_LIST pixSetMarkerOnCommandList = nullptr;
 
+        // Functions from D3D11.dll
+        PFN_D3D11ON12_CREATE_DEVICE d3d11on12CreateDevice = nullptr;
+
       private:
         MaybeError LoadD3D12();
+        MaybeError LoadD3D11();
         MaybeError LoadDXGI();
-        MaybeError LoadD3DCompiler();
+        void LoadDXIL();
+        void LoadDXCompiler();
+        MaybeError LoadFXCompiler();
         void LoadPIXRuntime();
 
         DynamicLib mD3D12Lib;
+        DynamicLib mD3D11Lib;
         DynamicLib mDXGILib;
-        DynamicLib mD3DCompilerLib;
+        DynamicLib mDXILLib;
+        DynamicLib mDXCompilerLib;
+        DynamicLib mFXCompilerLib;
         DynamicLib mPIXEventRuntimeLib;
     };
 

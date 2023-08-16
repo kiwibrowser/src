@@ -29,6 +29,15 @@ class ClipboardAndroid : public Clipboard {
   void OnPrimaryClipChanged(JNIEnv* env,
                             const base::android::JavaParamRef<jobject>& obj);
 
+  // Called by Java when the Java Clipboard is notified that the window focus
+  // has changed. Since Chrome will not receive OnPrimaryClipChanged call from
+  // Android if Chrome is in background,Clipboard handler needs to check the
+  // content of clipboard didn't change, when Chrome is back in foreground.
+  void OnPrimaryClipTimestampInvalidated(
+      JNIEnv* env,
+      const base::android::JavaParamRef<jobject>& obj,
+      const jlong j_timestamp_ms);
+
   // Sets the callback called whenever the clipboard is modified.
   UI_BASE_EXPORT void SetModifiedCallback(ModifiedCallback cb);
 

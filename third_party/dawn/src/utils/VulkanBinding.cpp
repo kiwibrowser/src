@@ -26,7 +26,7 @@ namespace utils {
 
     class VulkanBinding : public BackendBinding {
       public:
-        VulkanBinding(GLFWwindow* window, DawnDevice device) : BackendBinding(window, device) {
+        VulkanBinding(GLFWwindow* window, WGPUDevice device) : BackendBinding(window, device) {
         }
 
         uint64_t GetSwapChainImplementation() override {
@@ -41,7 +41,7 @@ namespace utils {
             }
             return reinterpret_cast<uint64_t>(&mSwapchainImpl);
         }
-        DawnTextureFormat GetPreferredSwapChainTextureFormat() override {
+        WGPUTextureFormat GetPreferredSwapChainTextureFormat() override {
             ASSERT(mSwapchainImpl.userData != nullptr);
             return dawn_native::vulkan::GetNativeSwapChainPreferredFormat(&mSwapchainImpl);
         }
@@ -50,7 +50,7 @@ namespace utils {
         DawnSwapChainImplementation mSwapchainImpl = {};
     };
 
-    BackendBinding* CreateVulkanBinding(GLFWwindow* window, DawnDevice device) {
+    BackendBinding* CreateVulkanBinding(GLFWwindow* window, WGPUDevice device) {
         return new VulkanBinding(window, device);
     }
 

@@ -8,6 +8,7 @@ import("//build/config/android/config.gni")
 import("//build/config/android/internal_rules.gni")
 import("//build/config/clang/clang.gni")
 import("//build/config/compiler/compiler.gni")
+import("//build/config/compute_inputs_for_analyze.gni")
 import("//build/config/dcheck_always_on.gni")
 import("//build/toolchain/toolchain.gni")
 
@@ -319,6 +320,8 @@ if (enable_java_templates) {
       _jar_file = android_sdk_jar
     }
 
+    _always_mangle = defined(invoker.always_mangle) && invoker.always_mangle
+
     _base_output_dir = "${target_gen_dir}/${target_name}/${invoker.jni_package}"
     _jni_output_dir = "${_base_output_dir}/jni"
 
@@ -367,6 +370,9 @@ if (enable_java_templates) {
         }
         if (enable_jni_tracing) {
           args += [ "--enable_tracing" ]
+        }
+        if (_always_mangle) {
+          args += [ "--always_mangle" ]
         }
       }
     }
@@ -596,10 +602,24 @@ if (enable_java_templates) {
     }
   }
 
+  if (compute_inputs_for_analyze) {
+    _jinja_template_pydeps =
+        exec_script("//build/print_python_deps.py",
+                    [
+                      rebase_path("//build/android/gyp/jinja_template.py"),
+                      "--no-header",
+                      "--gn-paths",
+                      "--root",
+                      rebase_path("//", root_build_dir),
+                    ],
+                    "list lines")
+  }
+
   # Declare a target for processing a Jinja template.
   #
   # Variables
   #   input: The template file to be processed.
+  #   includes: List of files {% include %}'ed by input.
   #   output: Where to save the result.
   #   variables: (Optional) A list of variables to make available to the template
   #     processing environment, e.g. ["name=foo", "color=red"].
@@ -622,6 +642,12 @@ if (enable_java_templates) {
       inputs = [
         invoker.input,
       ]
+      if (defined(invoker.includes)) {
+        inputs += invoker.includes
+      }
+      if (compute_inputs_for_analyze) {
+        inputs += _jinja_template_pydeps
+      }
       script = "//build/android/gyp/jinja_template.py"
       depfile = "$target_gen_dir/$target_name.d"
 
@@ -639,9 +665,75 @@ if (enable_java_templates) {
         "--depfile",
         rebase_path(depfile, root_build_dir),
       ]
+      if (defined(invoker.includes)) {
+        _rebased_includes = rebase_path(invoker.includes, root_build_dir)
+        args += [ "--includes=$_rebased_includes" ]
+      }
       if (defined(invoker.variables)) {
         args += [ "--variables=${invoker.variables}" ]
       }
+    }
+  }
+
+  # Declare a target for a set of Android resources generated at build
+  # time and stored in a single zip archive. The content of the archive
+  # should match the layout of a regular Android res/ folder (but the
+  # archive should not include a top-level res/ directory).
+  #
+  # Note that there is no associated .srcjar, R.txt or package name
+  # associated with this target.
+  #
+  # Variables:
+  #   generated_resources_zip: Generated zip archive path.
+  #   generating_target_name: Name of the target generating
+  #     generated_resources_zip. This rule will check that it is part
+  #     of its outputs.
+  #   deps: Specifies the dependencies of this target. Any Android resources
+  #     listed here will be also be included *after* this one when compiling
+  #     all resources for a final apk or junit binary. This is useful to
+  #     ensure that the resources of the current target override those of the
+  #     dependency as well (and would not work if you have these deps to the
+  #     generating target's dependencies).
+  #
+  # Example
+  #   _zip_archive = "$target_gen_dir/${target_name}.resources_zip"
+  #
+  #   action("my_resources__create_zip") {
+  #     _depfile = "$target_gen_dir/${target_name}.d"
+  #     script = "//build/path/to/create_my_resources_zip.py"
+  #     args = [
+  #       "--depfile", rebase_path(_depfile, root_build_dir),
+  #       "--output-zip", rebase_path(_zip_archive, root_build_dir),
+  #     ]
+  #     inputs = []
+  #     outputs = _zip_archive
+  #     depfile = _depfile
+  #   }
+  #
+  #   android_generated_resources("my_resources") {
+  #      generated_resources_zip = _zip_archive
+  #      generating_target_name = ":my_resources__create_zip"
+  #   }
+  #
+  template("android_generated_resources") {
+    forward_variables_from(invoker, [ "testonly" ])
+
+    _build_config = "$target_gen_dir/${target_name}.build_config"
+
+    write_build_config("${target_name}__build_config") {
+      build_config = _build_config
+      resources_zip = invoker.generated_resources_zip
+      type = "android_resources"
+      if (defined(invoker.deps)) {
+        possible_config_deps = invoker.deps
+      }
+    }
+
+    group(target_name) {
+      public_deps = [
+        ":${target_name}__build_config",
+        invoker.generating_target_name,
+      ]
     }
   }
 
@@ -673,18 +765,10 @@ if (enable_java_templates) {
     # directory or they will not be available to tester bots.
     _resources_zip_rebased_path = rebase_path(target_gen_dir, root_gen_dir)
     _resources_zip = "${root_out_dir}/resource_zips/${_resources_zip_rebased_path}/${target_name}.resources.zip"
-    _build_config = "$target_gen_dir/$target_name.build_config"
 
-    write_build_config("${target_name}__build_config") {
-      build_config = _build_config
-      resources_zip = _resources_zip
-      type = "android_resources"
-      if (defined(invoker.deps)) {
-        possible_config_deps = invoker.deps
-      }
-    }
+    _generating_target_name = "${target_name}__template"
 
-    action("${target_name}__template") {
+    action(_generating_target_name) {
       forward_variables_from(invoker, [ "deps" ])
       inputs = invoker.resources
       script = "//build/android/gyp/jinja_template.py"
@@ -710,11 +794,10 @@ if (enable_java_templates) {
       }
     }
 
-    group(target_name) {
-      public_deps = [
-        ":${target_name}__build_config",
-        ":${target_name}__template",
-      ]
+    android_generated_resources(target_name) {
+      forward_variables_from(invoker, [ "deps" ])
+      generating_target_name = ":$_generating_target_name"
+      generated_resources_zip = _resources_zip
     }
   }
 
@@ -998,13 +1081,6 @@ if (enable_java_templates) {
     # directory or they will not be available to tester bots.
     _resources_zip_rebased_path = rebase_path(target_gen_dir, root_gen_dir)
     _resources_zip = "${root_out_dir}/resource_zips/${_resources_zip_rebased_path}/${target_name}.resources.zip"
-    _build_config = "$target_gen_dir/$target_name.build_config"
-
-    write_build_config("${target_name}__build_config") {
-      type = "android_resources"
-      build_config = _build_config
-      resources_zip = _resources_zip
-    }
 
     _grit_target_name = "${target_name}__grit"
     _grit_output_dir = "$target_gen_dir/${target_name}_grit_output"
@@ -1021,7 +1097,9 @@ if (enable_java_templates) {
       outputs = invoker.outputs
     }
 
-    zip(target_name) {
+    _zip_target_name = "${target_name}__zip"
+
+    zip(_zip_target_name) {
       base_dir = _grit_output_dir
 
       # This needs to get outputs from grit's internal target, not the final
@@ -1031,6 +1109,11 @@ if (enable_java_templates) {
       deps = [
         ":$_grit_target_name",
       ]
+    }
+
+    android_generated_resources(target_name) {
+      generating_target_name = ":$_zip_target_name"
+      generated_resources_zip = _resources_zip
     }
   }
 
@@ -1057,27 +1140,23 @@ if (enable_java_templates) {
     # directory or they will not be available to tester bots.
     _resources_zip_rebased_path = rebase_path(target_gen_dir, root_gen_dir)
     _resources_zip = "${root_out_dir}/resource_zips/${_resources_zip_rebased_path}/${target_name}.resources.zip"
-    _build_config = "$target_gen_dir/$target_name.build_config"
-    _build_config_target_name = "${target_name}__build_config"
 
-    write_build_config(_build_config_target_name) {
-      type = "android_resources"
-      build_config = _build_config
-      resources_zip = _resources_zip
-    }
+    _zip_target_name = "${target_name}__zip"
 
-    zip(target_name) {
+    zip(_zip_target_name) {
       forward_variables_from(invoker, [ "visibility" ])
 
       base_dir = invoker.grit_output_dir
       inputs = rebase_path(invoker.generated_files, ".", base_dir)
       output = _resources_zip
-      deps = [
-        ":$_build_config_target_name",
-      ]
       if (defined(invoker.deps)) {
-        deps += invoker.deps
+        deps = invoker.deps
       }
+    }
+
+    android_generated_resources(target_name) {
+      generating_target_name = ":$_zip_target_name"
+      generated_resources_zip = _resources_zip
     }
   }
 

@@ -15,13 +15,14 @@
 #include "dawn_native/opengl/OpenGLFunctions.h"
 
 #include <cctype>
+#include <tuple>
 
 namespace dawn_native { namespace opengl {
 
     MaybeError OpenGLFunctions::Initialize(GetProcAddress getProc) {
         PFNGLGETSTRINGPROC getString = reinterpret_cast<PFNGLGETSTRINGPROC>(getProc("glGetString"));
         if (getString == nullptr) {
-            return DAWN_CONTEXT_LOST_ERROR("Couldn't load glGetString");
+            return DAWN_INTERNAL_ERROR("Couldn't load glGetString");
         }
 
         std::string version = reinterpret_cast<const char*>(getString(GL_VERSION));
@@ -53,7 +54,34 @@ namespace dawn_native { namespace opengl {
             DAWN_TRY(LoadDesktopGLProcs(getProc, mMajorVersion, mMinorVersion));
         }
 
+        InitializeSupportedGLExtensions();
+
         return {};
+    }
+
+    void OpenGLFunctions::InitializeSupportedGLExtensions() {
+        int32_t numExtensions;
+        GetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+
+        for (int32_t i = 0; i < numExtensions; ++i) {
+            const char* extensionName = reinterpret_cast<const char*>(GetStringi(GL_EXTENSIONS, i));
+            mSupportedGLExtensionsSet.insert(extensionName);
+        }
+    }
+
+    bool OpenGLFunctions::IsGLExtensionSupported(const char* extension) const {
+        ASSERT(extension != nullptr);
+        return mSupportedGLExtensionsSet.count(extension) != 0;
+    }
+
+    bool OpenGLFunctions::IsAtLeastGL(uint32_t majorVersion, uint32_t minorVersion) const {
+        return mStandard == Standard::Desktop &&
+               std::tie(mMajorVersion, mMinorVersion) >= std::tie(majorVersion, minorVersion);
+    }
+
+    bool OpenGLFunctions::IsAtLeastGLES(uint32_t majorVersion, uint32_t minorVersion) const {
+        return mStandard == Standard::ES &&
+               std::tie(mMajorVersion, mMinorVersion) >= std::tie(majorVersion, minorVersion);
     }
 
 }}  // namespace dawn_native::opengl

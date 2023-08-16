@@ -23,17 +23,19 @@ namespace dawn_native { namespace vulkan {
 
     class Device;
 
-    class SwapChain : public SwapChainBase {
+    class SwapChain final : public OldSwapChainBase {
       public:
-        SwapChain(Device* device, const SwapChainDescriptor* descriptor);
-        ~SwapChain();
+        static SwapChain* Create(Device* device, const SwapChainDescriptor* descriptor);
 
       protected:
+        SwapChain(Device* device, const SwapChainDescriptor* descriptor);
+        ~SwapChain() override;
+
         TextureBase* GetNextTextureImpl(const TextureDescriptor* descriptor) override;
-        void OnBeforePresent(TextureBase* texture) override;
+        MaybeError OnBeforePresent(TextureViewBase* view) override;
 
       private:
-        dawn::TextureUsageBit mTextureUsage;
+        wgpu::TextureUsage mTextureUsage;
     };
 
 }}  // namespace dawn_native::vulkan

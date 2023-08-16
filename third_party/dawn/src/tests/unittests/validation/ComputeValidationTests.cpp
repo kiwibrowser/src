@@ -14,7 +14,7 @@
 
 #include "tests/unittests/validation/ValidationTest.h"
 
-class ComputeValidationTest : public ValidationTest {
-};
+class ComputeValidationTest : public ValidationTest {};
 
-//TODO(cwallez@chromium.org): Add a regression test for Disptach validation trying to acces the input state.
+// TODO(cwallez@chromium.org): Add a regression test for Disptach validation trying to acces the
+// input state.

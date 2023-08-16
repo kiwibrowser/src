@@ -17,6 +17,7 @@
 
 #include "common/vulkan_platform.h"
 #include "dawn_native/Error.h"
+#include "dawn_native/vulkan/VulkanExtensions.h"
 
 #include <vector>
 
@@ -25,61 +26,50 @@ namespace dawn_native { namespace vulkan {
     class Adapter;
     class Backend;
 
-    extern const char kLayerNameLunargStandardValidation[];
+    extern const char kLayerNameKhronosValidation[];
     extern const char kLayerNameLunargVKTrace[];
     extern const char kLayerNameRenderDocCapture[];
-
-    extern const char kExtensionNameExtDebugMarker[];
-    extern const char kExtensionNameExtDebugReport[];
-    extern const char kExtensionNameMvkMacosSurface[];
-    extern const char kExtensionNameKhrSurface[];
-    extern const char kExtensionNameKhrSwapchain[];
-    extern const char kExtensionNameKhrWaylandSurface[];
-    extern const char kExtensionNameKhrWin32Surface[];
-    extern const char kExtensionNameKhrXcbSurface[];
-    extern const char kExtensionNameKhrXlibSurface[];
+    extern const char kLayerNameFuchsiaImagePipeSwapchain[];
 
     // Global information - gathered before the instance is created
     struct VulkanGlobalKnobs {
         // Layers
-        bool standardValidation = false;
+        bool validation = false;
         bool vktrace = false;
         bool renderDocCapture = false;
+        bool fuchsiaImagePipeSwapchain = false;
 
-        // Extensions
-        bool debugReport = false;
-        bool macosSurface = false;
-        bool surface = false;
-        bool waylandSurface = false;
-        bool win32Surface = false;
-        bool xcbSurface = false;
-        bool xlibSurface = false;
+        bool HasExt(InstanceExt ext) const;
+        InstanceExtSet extensions;
     };
 
     struct VulkanGlobalInfo : VulkanGlobalKnobs {
         std::vector<VkLayerProperties> layers;
-        std::vector<VkExtensionProperties> extensions;
+        uint32_t apiVersion;
         // TODO(cwallez@chromium.org): layer instance extensions
     };
 
     // Device information - gathered before the device is created.
     struct VulkanDeviceKnobs {
         VkPhysicalDeviceFeatures features;
+        VkPhysicalDeviceShaderFloat16Int8FeaturesKHR shaderFloat16Int8Features;
+        VkPhysicalDevice16BitStorageFeaturesKHR _16BitStorageFeatures;
+        VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroupSizeControlFeatures;
 
-        // Extensions
-        bool debugMarker = false;
-        bool swapchain = false;
+        bool HasExt(DeviceExt ext) const;
+        DeviceExtSet extensions;
     };
 
     struct VulkanDeviceInfo : VulkanDeviceKnobs {
         VkPhysicalDeviceProperties properties;
+        VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
+
         std::vector<VkQueueFamilyProperties> queueFamilies;
 
         std::vector<VkMemoryType> memoryTypes;
         std::vector<VkMemoryHeap> memoryHeaps;
 
         std::vector<VkLayerProperties> layers;
-        std::vector<VkExtensionProperties> extensions;
         // TODO(cwallez@chromium.org): layer instance extensions
     };
 
@@ -93,9 +83,8 @@ namespace dawn_native { namespace vulkan {
     ResultOrError<VulkanGlobalInfo> GatherGlobalInfo(const Backend& backend);
     ResultOrError<std::vector<VkPhysicalDevice>> GetPhysicalDevices(const Backend& backend);
     ResultOrError<VulkanDeviceInfo> GatherDeviceInfo(const Adapter& adapter);
-    MaybeError GatherSurfaceInfo(const Adapter& adapter,
-                                 VkSurfaceKHR surface,
-                                 VulkanSurfaceInfo* info);
+    ResultOrError<VulkanSurfaceInfo> GatherSurfaceInfo(const Adapter& adapter,
+                                                       VkSurfaceKHR surface);
 }}  // namespace dawn_native::vulkan
 
 #endif  // DAWNNATIVE_VULKAN_VULKANINFO_H_

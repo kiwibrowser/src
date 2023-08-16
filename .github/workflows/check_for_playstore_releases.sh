@@ -1,5 +1,3 @@
-#!/bin/bash
-
 curl_parameters=("-b" "cookie_jar" "-c" "cookie_jar" "-H" "authority: ${APPSTORE_HOST}" "-H" "pragma: no-cache" "-H" "cache-control: no-cache" "-H" "dnt: 1" "-H" "upgrade-insecure-requests: 1" "-H" "user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/81.0.4044.113 Safari/537.36" "-H" "accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9" "-H" "sec-fetch-site: none" "-H" "sec-fetch-mode: navigate" "-H" "sec-fetch-dest: document" "-H" "content-type: application/json" "-H" "accept-language: en-US,en;q=0.9" "--connect-timeout" "5" "--max-time" "10" "--retry" "5" "--retry-delay" "0" "--retry-max-time" "40" "--compressed")
 proxy_parameters=("--proxy" "http://$PROXY_USER@$PROXY_HOST" "--user" "$AUTHORIZATION")
 source_data=`curl -s -X POST "https://${APPSTORE_HOST}/${APPSTORE_LIST_PATH}" "${proxy_parameters[@]}" "${curl_parameters[@]}" -d '{ "pnames": ["com.kiwibrowser.browser"] }'`
@@ -13,10 +11,9 @@ fi
 versions_and_links_hash=`echo $versions_and_links | shasum | cut -f1 -d' '`
 links=`echo $source_data | jq '.data[0].apks[].link' | tr -d '"'`
 
-# This is apksigner with v3 signature verification
+# We use apksigner with v3 signature verification
 # Ubuntu provides only version 0.8, so we take Android SDK Build Tools version 30
 # apksigner 0.9
-wget https://s3.wasabisys.com/kiwibrowser-tools/apksigner.jar
 
 # Reference is:
 ########################################################################################################

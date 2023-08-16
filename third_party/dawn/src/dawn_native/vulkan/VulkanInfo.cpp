@@ -14,61 +14,88 @@
 
 #include "dawn_native/vulkan/VulkanInfo.h"
 
+#include "common/Log.h"
 #include "dawn_native/vulkan/AdapterVk.h"
 #include "dawn_native/vulkan/BackendVk.h"
+#include "dawn_native/vulkan/UtilsVulkan.h"
+#include "dawn_native/vulkan/VulkanError.h"
 
 #include <cstring>
 
-namespace {
-    bool IsLayerName(const VkLayerProperties& layer, const char* name) {
-        return strncmp(layer.layerName, name, VK_MAX_EXTENSION_NAME_SIZE) == 0;
-    }
-
-    bool IsExtensionName(const VkExtensionProperties& extension, const char* name) {
-        return strncmp(extension.extensionName, name, VK_MAX_EXTENSION_NAME_SIZE) == 0;
-    }
-}  // namespace
-
 namespace dawn_native { namespace vulkan {
 
-    const char kLayerNameLunargStandardValidation[] = "VK_LAYER_LUNARG_standard_validation";
+    namespace {
+        bool IsLayerName(const VkLayerProperties& layer, const char* name) {
+            return strncmp(layer.layerName, name, VK_MAX_EXTENSION_NAME_SIZE) == 0;
+        }
+
+        bool EnumerateInstanceExtensions(const char* layerName,
+                                         const dawn_native::vulkan::VulkanFunctions& vkFunctions,
+                                         std::vector<VkExtensionProperties>* extensions) {
+            uint32_t count = 0;
+            VkResult result = VkResult::WrapUnsafe(
+                vkFunctions.EnumerateInstanceExtensionProperties(layerName, &count, nullptr));
+            if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+                return false;
+            }
+            extensions->resize(count);
+            result = VkResult::WrapUnsafe(vkFunctions.EnumerateInstanceExtensionProperties(
+                layerName, &count, extensions->data()));
+            return (result == VK_SUCCESS);
+        }
+
+    }  // namespace
+
+    const char kLayerNameKhronosValidation[] = "VK_LAYER_KHRONOS_validation";
     const char kLayerNameLunargVKTrace[] = "VK_LAYER_LUNARG_vktrace";
     const char kLayerNameRenderDocCapture[] = "VK_LAYER_RENDERDOC_Capture";
+    const char kLayerNameFuchsiaImagePipeSwapchain[] = "VK_LAYER_FUCHSIA_imagepipe_swapchain";
 
-    const char kExtensionNameExtDebugMarker[] = "VK_EXT_debug_marker";
-    const char kExtensionNameExtDebugReport[] = "VK_EXT_debug_report";
-    const char kExtensionNameMvkMacosSurface[] = "VK_MVK_macos_surface";
-    const char kExtensionNameKhrSurface[] = "VK_KHR_surface";
-    const char kExtensionNameKhrSwapchain[] = "VK_KHR_swapchain";
-    const char kExtensionNameKhrWaylandSurface[] = "VK_KHR_wayland_surface";
-    const char kExtensionNameKhrWin32Surface[] = "VK_KHR_win32_surface";
-    const char kExtensionNameKhrXcbSurface[] = "VK_KHR_xcb_surface";
-    const char kExtensionNameKhrXlibSurface[] = "VK_KHR_xlib_surface";
+    bool VulkanGlobalKnobs::HasExt(InstanceExt ext) const {
+        return extensions.Has(ext);
+    }
+
+    bool VulkanDeviceKnobs::HasExt(DeviceExt ext) const {
+        return extensions.Has(ext);
+    }
 
     ResultOrError<VulkanGlobalInfo> GatherGlobalInfo(const Backend& backend) {
         VulkanGlobalInfo info = {};
         const VulkanFunctions& vkFunctions = backend.GetFunctions();
 
+        // Gather info on available API version
+        {
+            uint32_t supportedAPIVersion = VK_MAKE_VERSION(1, 0, 0);
+            if (vkFunctions.EnumerateInstanceVersion) {
+                vkFunctions.EnumerateInstanceVersion(&supportedAPIVersion);
+            }
+
+            // Use Vulkan 1.1 if it's available.
+            info.apiVersion = (supportedAPIVersion >= VK_MAKE_VERSION(1, 1, 0))
+                                  ? VK_MAKE_VERSION(1, 1, 0)
+                                  : VK_MAKE_VERSION(1, 0, 0);
+        }
+
         // Gather the info about the instance layers
         {
             uint32_t count = 0;
-            VkResult result = vkFunctions.EnumerateInstanceLayerProperties(&count, nullptr);
+            VkResult result =
+                VkResult::WrapUnsafe(vkFunctions.EnumerateInstanceLayerProperties(&count, nullptr));
             // From the Vulkan spec result should be success if there are 0 layers,
             // incomplete otherwise. This means that both values represent a success.
             // This is the same for all Enumarte functions
             if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateInstanceLayerProperties");
+                return DAWN_INTERNAL_ERROR("vkEnumerateInstanceLayerProperties");
             }
 
             info.layers.resize(count);
-            result = vkFunctions.EnumerateInstanceLayerProperties(&count, info.layers.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateInstanceLayerProperties");
-            }
+            DAWN_TRY(CheckVkSuccess(
+                vkFunctions.EnumerateInstanceLayerProperties(&count, info.layers.data()),
+                "vkEnumerateInstanceLayerProperties"));
 
             for (const auto& layer : info.layers) {
-                if (IsLayerName(layer, kLayerNameLunargStandardValidation)) {
-                    info.standardValidation = true;
+                if (IsLayerName(layer, kLayerNameKhronosValidation)) {
+                    info.validation = true;
                 }
                 if (IsLayerName(layer, kLayerNameLunargVKTrace)) {
                     info.vktrace = true;
@@ -76,53 +103,56 @@ namespace dawn_native { namespace vulkan {
                 if (IsLayerName(layer, kLayerNameRenderDocCapture)) {
                     info.renderDocCapture = true;
                 }
+                // Technical note: Fuchsia implements the swapchain through
+                // a layer (VK_LAYER_FUCHSIA_image_pipe_swapchain), which adds
+                // an instance extensions (VK_FUCHSIA_image_surface) to all ICDs.
+                if (IsLayerName(layer, kLayerNameFuchsiaImagePipeSwapchain)) {
+                    info.fuchsiaImagePipeSwapchain = true;
+                }
             }
         }
 
         // Gather the info about the instance extensions
         {
-            uint32_t count = 0;
-            VkResult result =
-                vkFunctions.EnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
-            if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateInstanceExtensionProperties");
+            std::unordered_map<std::string, InstanceExt> knownExts = CreateInstanceExtNameMap();
+
+            std::vector<VkExtensionProperties> extensionsProperties;
+            if (!EnumerateInstanceExtensions(nullptr, vkFunctions, &extensionsProperties)) {
+                return DAWN_INTERNAL_ERROR("vkEnumerateInstanceExtensionProperties");
             }
 
-            info.extensions.resize(count);
-            result = vkFunctions.EnumerateInstanceExtensionProperties(nullptr, &count,
-                                                                      info.extensions.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateInstanceExtensionProperties");
+            for (const VkExtensionProperties& extension : extensionsProperties) {
+                auto it = knownExts.find(extension.extensionName);
+                if (it != knownExts.end()) {
+                    info.extensions.Set(it->second, true);
+                }
             }
 
-            for (const auto& extension : info.extensions) {
-                if (IsExtensionName(extension, kExtensionNameExtDebugReport)) {
-                    info.debugReport = true;
+            // Specific handling for the Fuchsia swapchain surface creation extension
+            // which is normally part of the Fuchsia-specific swapchain layer.
+            if (info.fuchsiaImagePipeSwapchain &&
+                !info.HasExt(InstanceExt::FuchsiaImagePipeSurface)) {
+                if (!EnumerateInstanceExtensions(kLayerNameFuchsiaImagePipeSwapchain, vkFunctions,
+                                                 &extensionsProperties)) {
+                    return DAWN_INTERNAL_ERROR("vkEnumerateInstanceExtensionProperties");
                 }
-                if (IsExtensionName(extension, kExtensionNameMvkMacosSurface)) {
-                    info.macosSurface = true;
-                }
-                if (IsExtensionName(extension, kExtensionNameKhrSurface)) {
-                    info.surface = true;
-                }
-                if (IsExtensionName(extension, kExtensionNameKhrWaylandSurface)) {
-                    info.waylandSurface = true;
-                }
-                if (IsExtensionName(extension, kExtensionNameKhrWin32Surface)) {
-                    info.win32Surface = true;
-                }
-                if (IsExtensionName(extension, kExtensionNameKhrXcbSurface)) {
-                    info.xcbSurface = true;
-                }
-                if (IsExtensionName(extension, kExtensionNameKhrXlibSurface)) {
-                    info.xlibSurface = true;
+
+                for (const VkExtensionProperties& extension : extensionsProperties) {
+                    auto it = knownExts.find(extension.extensionName);
+                    if (it != knownExts.end() &&
+                        it->second == InstanceExt::FuchsiaImagePipeSurface) {
+                        info.extensions.Set(InstanceExt::FuchsiaImagePipeSurface, true);
+                    }
                 }
             }
+
+            MarkPromotedExtensions(&info.extensions, info.apiVersion);
+            info.extensions = EnsureDependencies(info.extensions);
         }
 
         // TODO(cwallez@chromium:org): Each layer can expose additional extensions, query them?
 
-        return info;
+        return std::move(info);
     }
 
     ResultOrError<std::vector<VkPhysicalDevice>> GetPhysicalDevices(const Backend& backend) {
@@ -130,28 +160,28 @@ namespace dawn_native { namespace vulkan {
         const VulkanFunctions& vkFunctions = backend.GetFunctions();
 
         uint32_t count = 0;
-        VkResult result = vkFunctions.EnumeratePhysicalDevices(instance, &count, nullptr);
+        VkResult result =
+            VkResult::WrapUnsafe(vkFunctions.EnumeratePhysicalDevices(instance, &count, nullptr));
         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            return DAWN_CONTEXT_LOST_ERROR("vkEnumeratePhysicalDevices");
+            return DAWN_INTERNAL_ERROR("vkEnumeratePhysicalDevices");
         }
 
         std::vector<VkPhysicalDevice> physicalDevices(count);
-        result = vkFunctions.EnumeratePhysicalDevices(instance, &count, physicalDevices.data());
-        if (result != VK_SUCCESS) {
-            return DAWN_CONTEXT_LOST_ERROR("vkEnumeratePhysicalDevices");
-        }
+        DAWN_TRY(CheckVkSuccess(
+            vkFunctions.EnumeratePhysicalDevices(instance, &count, physicalDevices.data()),
+            "vkEnumeratePhysicalDevices"));
 
-        return physicalDevices;
+        return std::move(physicalDevices);
     }
 
     ResultOrError<VulkanDeviceInfo> GatherDeviceInfo(const Adapter& adapter) {
         VulkanDeviceInfo info = {};
         VkPhysicalDevice physicalDevice = adapter.GetPhysicalDevice();
+        const VulkanGlobalInfo& globalInfo = adapter.GetBackend()->GetGlobalInfo();
         const VulkanFunctions& vkFunctions = adapter.GetBackend()->GetFunctions();
 
-        // Gather general info about the device
+        // Query the device properties first to get the ICD's `apiVersion`
         vkFunctions.GetPhysicalDeviceProperties(physicalDevice, &info.properties);
-        vkFunctions.GetPhysicalDeviceFeatures(physicalDevice, &info.features);
 
         // Gather info about device memory.
         {
@@ -177,120 +207,158 @@ namespace dawn_native { namespace vulkan {
         // Gather the info about the device layers
         {
             uint32_t count = 0;
-            VkResult result =
-                vkFunctions.EnumerateDeviceLayerProperties(physicalDevice, &count, nullptr);
+            VkResult result = VkResult::WrapUnsafe(
+                vkFunctions.EnumerateDeviceLayerProperties(physicalDevice, &count, nullptr));
             if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateDeviceLayerProperties");
+                return DAWN_INTERNAL_ERROR("vkEnumerateDeviceLayerProperties");
             }
 
             info.layers.resize(count);
-            result = vkFunctions.EnumerateDeviceLayerProperties(physicalDevice, &count,
-                                                                info.layers.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateDeviceLayerProperties");
-            }
+            DAWN_TRY(CheckVkSuccess(vkFunctions.EnumerateDeviceLayerProperties(
+                                        physicalDevice, &count, info.layers.data()),
+                                    "vkEnumerateDeviceLayerProperties"));
         }
 
         // Gather the info about the device extensions
         {
             uint32_t count = 0;
-            VkResult result = vkFunctions.EnumerateDeviceExtensionProperties(
-                physicalDevice, nullptr, &count, nullptr);
+            VkResult result = VkResult::WrapUnsafe(vkFunctions.EnumerateDeviceExtensionProperties(
+                physicalDevice, nullptr, &count, nullptr));
             if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateDeviceExtensionProperties");
+                return DAWN_INTERNAL_ERROR("vkEnumerateDeviceExtensionProperties");
             }
 
-            info.extensions.resize(count);
-            result = vkFunctions.EnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count,
-                                                                    info.extensions.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkEnumerateDeviceExtensionProperties");
-            }
+            std::vector<VkExtensionProperties> extensionsProperties;
+            extensionsProperties.resize(count);
+            DAWN_TRY(
+                CheckVkSuccess(vkFunctions.EnumerateDeviceExtensionProperties(
+                                   physicalDevice, nullptr, &count, extensionsProperties.data()),
+                               "vkEnumerateDeviceExtensionProperties"));
 
-            for (const auto& extension : info.extensions) {
-                if (IsExtensionName(extension, kExtensionNameExtDebugMarker)) {
-                    info.debugMarker = true;
+            std::unordered_map<std::string, DeviceExt> knownExts = CreateDeviceExtNameMap();
+
+            for (const VkExtensionProperties& extension : extensionsProperties) {
+                auto it = knownExts.find(extension.extensionName);
+                if (it != knownExts.end()) {
+                    info.extensions.Set(it->second, true);
                 }
-
-                if (IsExtensionName(extension, kExtensionNameKhrSwapchain)) {
-                    info.swapchain = true;
-                }
             }
+
+            MarkPromotedExtensions(&info.extensions, info.properties.apiVersion);
+            info.extensions = EnsureDependencies(info.extensions, globalInfo.extensions,
+                                                 info.properties.apiVersion);
+        }
+
+        // Gather general and extension features and properties
+        //
+        // Use vkGetPhysicalDevice{Features,Properties}2 if required to gather information about
+        // the extensions. DeviceExt::GetPhysicalDeviceProperties2 is guaranteed to be available
+        // because these extensions (transitively) depend on it in `EnsureDependencies`
+        VkPhysicalDeviceFeatures2 features2 = {};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        PNextChainBuilder featuresChain(&features2);
+
+        VkPhysicalDeviceProperties2 properties2 = {};
+        properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        PNextChainBuilder propertiesChain(&properties2);
+
+        if (info.extensions.Has(DeviceExt::ShaderFloat16Int8)) {
+            featuresChain.Add(&info.shaderFloat16Int8Features,
+                              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR);
+        }
+
+        if (info.extensions.Has(DeviceExt::_16BitStorage)) {
+            featuresChain.Add(&info._16BitStorageFeatures,
+                              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES);
+        }
+
+        if (info.extensions.Has(DeviceExt::SubgroupSizeControl)) {
+            featuresChain.Add(&info.subgroupSizeControlFeatures,
+                              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT);
+            propertiesChain.Add(
+                &info.subgroupSizeControlProperties,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES_EXT);
+        }
+
+        // If we have DeviceExt::GetPhysicalDeviceProperties2, use features2 and properties2 so
+        // that features no covered by VkPhysicalDevice{Features,Properties} can be queried.
+        //
+        // Note that info.properties has already been filled at the start of this function to get
+        // `apiVersion`.
+        ASSERT(info.properties.apiVersion != 0);
+        if (info.extensions.Has(DeviceExt::GetPhysicalDeviceProperties2)) {
+            vkFunctions.GetPhysicalDeviceProperties2(physicalDevice, &properties2);
+            vkFunctions.GetPhysicalDeviceFeatures2(physicalDevice, &features2);
+            info.features = features2.features;
+        } else {
+            ASSERT(features2.pNext == nullptr && properties2.pNext == nullptr);
+            vkFunctions.GetPhysicalDeviceFeatures(physicalDevice, &info.features);
         }
 
         // TODO(cwallez@chromium.org): gather info about formats
 
-        return info;
+        return std::move(info);
     }
 
-    MaybeError GatherSurfaceInfo(const Adapter& adapter,
-                                 VkSurfaceKHR surface,
-                                 VulkanSurfaceInfo* info) {
+    ResultOrError<VulkanSurfaceInfo> GatherSurfaceInfo(const Adapter& adapter,
+                                                       VkSurfaceKHR surface) {
+        VulkanSurfaceInfo info = {};
+
         VkPhysicalDevice physicalDevice = adapter.GetPhysicalDevice();
         const VulkanFunctions& vkFunctions = adapter.GetBackend()->GetFunctions();
 
         // Get the surface capabilities
-        {
-            VkResult result = vkFunctions.GetPhysicalDeviceSurfaceCapabilitiesKHR(
-                physicalDevice, surface, &info->capabilities);
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
-            }
-        }
+        DAWN_TRY(CheckVkSuccess(vkFunctions.GetPhysicalDeviceSurfaceCapabilitiesKHR(
+                                    physicalDevice, surface, &info.capabilities),
+                                "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
 
         // Query which queue families support presenting this surface
         {
             size_t nQueueFamilies = adapter.GetDeviceInfo().queueFamilies.size();
-            info->supportedQueueFamilies.resize(nQueueFamilies, false);
+            info.supportedQueueFamilies.resize(nQueueFamilies, false);
 
             for (uint32_t i = 0; i < nQueueFamilies; ++i) {
                 VkBool32 supported = VK_FALSE;
-                VkResult result = vkFunctions.GetPhysicalDeviceSurfaceSupportKHR(
-                    physicalDevice, i, surface, &supported);
+                DAWN_TRY(CheckVkSuccess(vkFunctions.GetPhysicalDeviceSurfaceSupportKHR(
+                                            physicalDevice, i, surface, &supported),
+                                        "vkGetPhysicalDeviceSurfaceSupportKHR"));
 
-                if (result != VK_SUCCESS) {
-                    return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfaceSupportKHR");
-                }
-
-                info->supportedQueueFamilies[i] = (supported == VK_TRUE);
+                info.supportedQueueFamilies[i] = (supported == VK_TRUE);
             }
         }
 
         // Gather supported formats
         {
             uint32_t count = 0;
-            VkResult result = vkFunctions.GetPhysicalDeviceSurfaceFormatsKHR(
-                physicalDevice, surface, &count, nullptr);
+            VkResult result = VkResult::WrapUnsafe(vkFunctions.GetPhysicalDeviceSurfaceFormatsKHR(
+                physicalDevice, surface, &count, nullptr));
             if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfaceFormatsKHR");
+                return DAWN_INTERNAL_ERROR("vkGetPhysicalDeviceSurfaceFormatsKHR");
             }
 
-            info->formats.resize(count);
-            result = vkFunctions.GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count,
-                                                                    info->formats.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfaceFormatsKHR");
-            }
+            info.formats.resize(count);
+            DAWN_TRY(CheckVkSuccess(vkFunctions.GetPhysicalDeviceSurfaceFormatsKHR(
+                                        physicalDevice, surface, &count, info.formats.data()),
+                                    "vkGetPhysicalDeviceSurfaceFormatsKHR"));
         }
 
         // Gather supported presents modes
         {
             uint32_t count = 0;
-            VkResult result = vkFunctions.GetPhysicalDeviceSurfacePresentModesKHR(
-                physicalDevice, surface, &count, nullptr);
+            VkResult result =
+                VkResult::WrapUnsafe(vkFunctions.GetPhysicalDeviceSurfacePresentModesKHR(
+                    physicalDevice, surface, &count, nullptr));
             if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-                return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfacePresentModesKHR");
+                return DAWN_INTERNAL_ERROR("vkGetPhysicalDeviceSurfacePresentModesKHR");
             }
 
-            info->presentModes.resize(count);
-            result = vkFunctions.GetPhysicalDeviceSurfacePresentModesKHR(
-                physicalDevice, surface, &count, info->presentModes.data());
-            if (result != VK_SUCCESS) {
-                return DAWN_CONTEXT_LOST_ERROR("vkGetPhysicalDeviceSurfacePresentModesKHR");
-            }
+            info.presentModes.resize(count);
+            DAWN_TRY(CheckVkSuccess(vkFunctions.GetPhysicalDeviceSurfacePresentModesKHR(
+                                        physicalDevice, surface, &count, info.presentModes.data()),
+                                    "vkGetPhysicalDeviceSurfacePresentModesKHR"));
         }
 
-        return {};
+        return std::move(info);
     }
 
 }}  // namespace dawn_native::vulkan

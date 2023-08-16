@@ -18,13 +18,47 @@
 #include <dawn/dawn_wsi.h>
 #include <dawn_native/DawnNative.h>
 
+#include <DXGI1_4.h>
 #include <windows.h>
+#include <wrl/client.h>
+
+struct ID3D12Device;
 
 namespace dawn_native { namespace d3d12 {
-    DAWN_NATIVE_EXPORT DawnSwapChainImplementation CreateNativeSwapChainImpl(DawnDevice device,
+    DAWN_NATIVE_EXPORT Microsoft::WRL::ComPtr<ID3D12Device> GetD3D12Device(WGPUDevice device);
+    DAWN_NATIVE_EXPORT DawnSwapChainImplementation CreateNativeSwapChainImpl(WGPUDevice device,
                                                                              HWND window);
-    DAWN_NATIVE_EXPORT DawnTextureFormat
+    DAWN_NATIVE_EXPORT WGPUTextureFormat
     GetNativeSwapChainPreferredFormat(const DawnSwapChainImplementation* swapChain);
+
+    enum MemorySegment {
+        Local,
+        NonLocal,
+    };
+
+    DAWN_NATIVE_EXPORT uint64_t SetExternalMemoryReservation(WGPUDevice device,
+                                                             uint64_t requestedReservationSize,
+                                                             MemorySegment memorySegment);
+
+    struct DAWN_NATIVE_EXPORT ExternalImageDescriptorDXGISharedHandle : ExternalImageDescriptor {
+      public:
+        ExternalImageDescriptorDXGISharedHandle();
+
+        HANDLE sharedHandle;
+        uint64_t acquireMutexKey;
+        bool isSwapChainTexture = false;
+    };
+
+    // Note: SharedHandle must be a handle to a texture object.
+    DAWN_NATIVE_EXPORT WGPUTexture
+    WrapSharedHandle(WGPUDevice device, const ExternalImageDescriptorDXGISharedHandle* descriptor);
+
+    struct DAWN_NATIVE_EXPORT AdapterDiscoveryOptions : public AdapterDiscoveryOptionsBase {
+        AdapterDiscoveryOptions(Microsoft::WRL::ComPtr<IDXGIAdapter> adapter);
+
+        Microsoft::WRL::ComPtr<IDXGIAdapter> dxgiAdapter;
+    };
+
 }}  // namespace dawn_native::d3d12
 
 #endif  // DAWNNATIVE_D3D12BACKEND_H_

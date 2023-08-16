@@ -22,12 +22,16 @@ namespace dawn_native { namespace opengl {
     class CommandBuffer;
     class Device;
 
-    class Queue : public QueueBase {
+    class Queue final : public QueueBase {
       public:
         Queue(Device* device);
 
       private:
-        void SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
+        MaybeError SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
+        MaybeError WriteBufferImpl(BufferBase* buffer,
+                                   uint64_t bufferOffset,
+                                   const void* data,
+                                   size_t size) override;
     };
 
 }}  // namespace dawn_native::opengl

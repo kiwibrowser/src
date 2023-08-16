@@ -17,6 +17,7 @@
 #include "dawn_native/D3D12Backend.h"
 #include "dawn_native/Instance.h"
 #include "dawn_native/d3d12/AdapterD3D12.h"
+#include "dawn_native/d3d12/D3D12Error.h"
 #include "dawn_native/d3d12/PlatformFunctions.h"
 
 namespace dawn_native { namespace d3d12 {
@@ -24,7 +25,8 @@ namespace dawn_native { namespace d3d12 {
     namespace {
 
         ResultOrError<ComPtr<IDXGIFactory4>> CreateFactory(const PlatformFunctions* functions,
-                                                           bool enableBackendValidation) {
+                                                           bool enableBackendValidation,
+                                                           bool beginCaptureOnStartup) {
             ComPtr<IDXGIFactory4> factory;
 
             uint32_t dxgiFactoryFlags = 0;
@@ -32,11 +34,12 @@ namespace dawn_native { namespace d3d12 {
             // Enable the debug layer (requires the Graphics Tools "optional feature").
             {
                 if (enableBackendValidation) {
-                    ComPtr<ID3D12Debug> debugController;
+                    ComPtr<ID3D12Debug1> debugController;
                     if (SUCCEEDED(
                             functions->d3d12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
                         ASSERT(debugController != nullptr);
                         debugController->EnableDebugLayer();
+                        debugController->SetEnableGPUBasedValidation(true);
 
                         // Enable additional debug layers.
                         dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
@@ -49,33 +52,77 @@ namespace dawn_native { namespace d3d12 {
                                                      DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_ALL));
                     }
                 }
+
+                if (beginCaptureOnStartup) {
+                    ComPtr<IDXGraphicsAnalysis> graphicsAnalysis;
+                    if (SUCCEEDED(functions->dxgiGetDebugInterface1(
+                            0, IID_PPV_ARGS(&graphicsAnalysis)))) {
+                        graphicsAnalysis->BeginCapture();
+                    }
+                }
             }
 
             if (FAILED(functions->createDxgiFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)))) {
-                return DAWN_CONTEXT_LOST_ERROR("Failed to create a DXGI factory");
+                return DAWN_INTERNAL_ERROR("Failed to create a DXGI factory");
             }
 
             ASSERT(factory != nullptr);
-            return factory;
+            return std::move(factory);
+        }
+
+        ResultOrError<std::unique_ptr<AdapterBase>> CreateAdapterFromIDXGIAdapter(
+            Backend* backend,
+            ComPtr<IDXGIAdapter> dxgiAdapter) {
+            ComPtr<IDXGIAdapter3> dxgiAdapter3;
+            DAWN_TRY(CheckHRESULT(dxgiAdapter.As(&dxgiAdapter3), "DXGIAdapter retrieval"));
+            std::unique_ptr<Adapter> adapter =
+                std::make_unique<Adapter>(backend, std::move(dxgiAdapter3));
+            DAWN_TRY(adapter->Initialize());
+
+            return {std::move(adapter)};
         }
 
     }  // anonymous namespace
 
-    Backend::Backend(InstanceBase* instance) : BackendConnection(instance, BackendType::D3D12) {
+    Backend::Backend(InstanceBase* instance)
+        : BackendConnection(instance, wgpu::BackendType::D3D12) {
     }
 
     MaybeError Backend::Initialize() {
         mFunctions = std::make_unique<PlatformFunctions>();
         DAWN_TRY(mFunctions->LoadFunctions());
 
-        DAWN_TRY_ASSIGN(
-            mFactory, CreateFactory(mFunctions.get(), GetInstance()->IsBackendValidationEnabled()));
+        const auto instance = GetInstance();
+
+        DAWN_TRY_ASSIGN(mFactory,
+                        CreateFactory(mFunctions.get(), instance->IsBackendValidationEnabled(),
+                                      instance->IsBeginCaptureOnStartupEnabled()));
 
         return {};
     }
 
     ComPtr<IDXGIFactory4> Backend::GetFactory() const {
         return mFactory;
+    }
+
+    ResultOrError<IDxcLibrary*> Backend::GetOrCreateDxcLibrary() {
+        if (mDxcLibrary == nullptr) {
+            DAWN_TRY(CheckHRESULT(
+                mFunctions->dxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&mDxcLibrary)),
+                "DXC create library"));
+            ASSERT(mDxcLibrary != nullptr);
+        }
+        return mDxcLibrary.Get();
+    }
+
+    ResultOrError<IDxcCompiler*> Backend::GetOrCreateDxcCompiler() {
+        if (mDxcCompiler == nullptr) {
+            DAWN_TRY(CheckHRESULT(
+                mFunctions->dxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&mDxcCompiler)),
+                "DXC create compiler"));
+            ASSERT(mDxcCompiler != nullptr);
+        }
+        return mDxcCompiler.Get();
     }
 
     const PlatformFunctions* Backend::GetFunctions() const {
@@ -92,16 +139,32 @@ namespace dawn_native { namespace d3d12 {
             }
 
             ASSERT(dxgiAdapter != nullptr);
-
-            std::unique_ptr<Adapter> adapter = std::make_unique<Adapter>(this, dxgiAdapter);
-            if (GetInstance()->ConsumedError(adapter->Initialize())) {
+            ResultOrError<std::unique_ptr<AdapterBase>> adapter =
+                CreateAdapterFromIDXGIAdapter(this, dxgiAdapter);
+            if (adapter.IsError()) {
+                adapter.AcquireError();
                 continue;
             }
 
-            adapters.push_back(std::move(adapter));
+            adapters.push_back(std::move(adapter.AcquireSuccess()));
         }
 
         return adapters;
+    }
+
+    ResultOrError<std::vector<std::unique_ptr<AdapterBase>>> Backend::DiscoverAdapters(
+        const AdapterDiscoveryOptionsBase* optionsBase) {
+        ASSERT(optionsBase->backendType == WGPUBackendType_D3D12);
+        const AdapterDiscoveryOptions* options =
+            static_cast<const AdapterDiscoveryOptions*>(optionsBase);
+
+        ASSERT(options->dxgiAdapter != nullptr);
+
+        std::unique_ptr<AdapterBase> adapter;
+        DAWN_TRY_ASSIGN(adapter, CreateAdapterFromIDXGIAdapter(this, options->dxgiAdapter));
+        std::vector<std::unique_ptr<AdapterBase>> adapters;
+        adapters.push_back(std::move(adapter));
+        return std::move(adapters);
     }
 
     BackendConnection* Connect(InstanceBase* instance) {

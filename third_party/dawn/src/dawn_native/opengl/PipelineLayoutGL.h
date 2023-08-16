@@ -17,18 +17,21 @@
 
 #include "dawn_native/PipelineLayout.h"
 
-#include "glad/glad.h"
+#include "common/ityp_array.h"
+#include "common/ityp_vector.h"
+#include "dawn_native/BindingInfo.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
 
     class Device;
 
-    class PipelineLayout : public PipelineLayoutBase {
+    class PipelineLayout final : public PipelineLayoutBase {
       public:
         PipelineLayout(Device* device, const PipelineLayoutDescriptor* descriptor);
 
         using BindingIndexInfo =
-            std::array<std::array<GLuint, kMaxBindingsPerGroup>, kMaxBindGroups>;
+            ityp::array<BindGroupIndex, ityp::vector<BindingIndex, GLuint>, kMaxBindGroups>;
         const BindingIndexInfo& GetBindingIndexInfo() const;
 
         GLuint GetTextureUnitsUsed() const;
@@ -36,6 +39,7 @@ namespace dawn_native { namespace opengl {
         size_t GetNumSampledTextures() const;
 
       private:
+        ~PipelineLayout() override = default;
         BindingIndexInfo mIndexInfo;
         size_t mNumSamplers;
         size_t mNumSampledTextures;

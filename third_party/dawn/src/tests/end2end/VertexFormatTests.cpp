@@ -17,7 +17,7 @@
 #include "common/Assert.h"
 #include "common/Math.h"
 #include "utils/ComboRenderPipelineDescriptor.h"
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
 // Vertex format tests all work the same way: the test will render a triangle.
 // Each test will set up a vertex buffer, and the vertex shader will check that
@@ -54,141 +54,141 @@ class VertexFormatTest : public DawnTest {
 
     utils::BasicRenderPass renderPass;
 
-    bool IsNormalizedFormat(dawn::VertexFormat format) {
+    bool IsNormalizedFormat(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::UChar2Norm:
-            case dawn::VertexFormat::UChar4Norm:
-            case dawn::VertexFormat::Char2Norm:
-            case dawn::VertexFormat::Char4Norm:
-            case dawn::VertexFormat::UShort2Norm:
-            case dawn::VertexFormat::UShort4Norm:
-            case dawn::VertexFormat::Short2Norm:
-            case dawn::VertexFormat::Short4Norm:
+            case wgpu::VertexFormat::UChar2Norm:
+            case wgpu::VertexFormat::UChar4Norm:
+            case wgpu::VertexFormat::Char2Norm:
+            case wgpu::VertexFormat::Char4Norm:
+            case wgpu::VertexFormat::UShort2Norm:
+            case wgpu::VertexFormat::UShort4Norm:
+            case wgpu::VertexFormat::Short2Norm:
+            case wgpu::VertexFormat::Short4Norm:
                 return true;
             default:
                 return false;
         }
     }
 
-    bool IsUnsignedFormat(dawn::VertexFormat format) {
+    bool IsUnsignedFormat(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::UInt:
-            case dawn::VertexFormat::UChar2:
-            case dawn::VertexFormat::UChar4:
-            case dawn::VertexFormat::UShort2:
-            case dawn::VertexFormat::UShort4:
-            case dawn::VertexFormat::UInt2:
-            case dawn::VertexFormat::UInt3:
-            case dawn::VertexFormat::UInt4:
-            case dawn::VertexFormat::UChar2Norm:
-            case dawn::VertexFormat::UChar4Norm:
-            case dawn::VertexFormat::UShort2Norm:
-            case dawn::VertexFormat::UShort4Norm:
+            case wgpu::VertexFormat::UInt:
+            case wgpu::VertexFormat::UChar2:
+            case wgpu::VertexFormat::UChar4:
+            case wgpu::VertexFormat::UShort2:
+            case wgpu::VertexFormat::UShort4:
+            case wgpu::VertexFormat::UInt2:
+            case wgpu::VertexFormat::UInt3:
+            case wgpu::VertexFormat::UInt4:
+            case wgpu::VertexFormat::UChar2Norm:
+            case wgpu::VertexFormat::UChar4Norm:
+            case wgpu::VertexFormat::UShort2Norm:
+            case wgpu::VertexFormat::UShort4Norm:
                 return true;
             default:
                 return false;
         }
     }
 
-    bool IsFloatFormat(dawn::VertexFormat format) {
+    bool IsFloatFormat(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::Half2:
-            case dawn::VertexFormat::Half4:
-            case dawn::VertexFormat::Float:
-            case dawn::VertexFormat::Float2:
-            case dawn::VertexFormat::Float3:
-            case dawn::VertexFormat::Float4:
+            case wgpu::VertexFormat::Half2:
+            case wgpu::VertexFormat::Half4:
+            case wgpu::VertexFormat::Float:
+            case wgpu::VertexFormat::Float2:
+            case wgpu::VertexFormat::Float3:
+            case wgpu::VertexFormat::Float4:
                 return true;
             default:
                 return false;
         }
     }
 
-    bool IsHalfFormat(dawn::VertexFormat format) {
+    bool IsHalfFormat(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::Half2:
-            case dawn::VertexFormat::Half4:
+            case wgpu::VertexFormat::Half2:
+            case wgpu::VertexFormat::Half4:
                 return true;
             default:
                 return false;
         }
     }
 
-    uint32_t BytesPerComponents(dawn::VertexFormat format) {
+    uint32_t BytesPerComponents(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::Char2:
-            case dawn::VertexFormat::Char4:
-            case dawn::VertexFormat::UChar2:
-            case dawn::VertexFormat::UChar4:
-            case dawn::VertexFormat::UChar2Norm:
-            case dawn::VertexFormat::UChar4Norm:
-            case dawn::VertexFormat::Char2Norm:
-            case dawn::VertexFormat::Char4Norm:
+            case wgpu::VertexFormat::Char2:
+            case wgpu::VertexFormat::Char4:
+            case wgpu::VertexFormat::UChar2:
+            case wgpu::VertexFormat::UChar4:
+            case wgpu::VertexFormat::UChar2Norm:
+            case wgpu::VertexFormat::UChar4Norm:
+            case wgpu::VertexFormat::Char2Norm:
+            case wgpu::VertexFormat::Char4Norm:
                 return 1;
-            case dawn::VertexFormat::UShort2:
-            case dawn::VertexFormat::UShort4:
-            case dawn::VertexFormat::Short2:
-            case dawn::VertexFormat::Short4:
-            case dawn::VertexFormat::UShort2Norm:
-            case dawn::VertexFormat::UShort4Norm:
-            case dawn::VertexFormat::Short2Norm:
-            case dawn::VertexFormat::Short4Norm:
-            case dawn::VertexFormat::Half2:
-            case dawn::VertexFormat::Half4:
+            case wgpu::VertexFormat::UShort2:
+            case wgpu::VertexFormat::UShort4:
+            case wgpu::VertexFormat::Short2:
+            case wgpu::VertexFormat::Short4:
+            case wgpu::VertexFormat::UShort2Norm:
+            case wgpu::VertexFormat::UShort4Norm:
+            case wgpu::VertexFormat::Short2Norm:
+            case wgpu::VertexFormat::Short4Norm:
+            case wgpu::VertexFormat::Half2:
+            case wgpu::VertexFormat::Half4:
                 return 2;
-            case dawn::VertexFormat::UInt:
-            case dawn::VertexFormat::Int:
-            case dawn::VertexFormat::Float:
-            case dawn::VertexFormat::UInt2:
-            case dawn::VertexFormat::UInt3:
-            case dawn::VertexFormat::UInt4:
-            case dawn::VertexFormat::Int2:
-            case dawn::VertexFormat::Int3:
-            case dawn::VertexFormat::Int4:
-            case dawn::VertexFormat::Float2:
-            case dawn::VertexFormat::Float3:
-            case dawn::VertexFormat::Float4:
+            case wgpu::VertexFormat::UInt:
+            case wgpu::VertexFormat::Int:
+            case wgpu::VertexFormat::Float:
+            case wgpu::VertexFormat::UInt2:
+            case wgpu::VertexFormat::UInt3:
+            case wgpu::VertexFormat::UInt4:
+            case wgpu::VertexFormat::Int2:
+            case wgpu::VertexFormat::Int3:
+            case wgpu::VertexFormat::Int4:
+            case wgpu::VertexFormat::Float2:
+            case wgpu::VertexFormat::Float3:
+            case wgpu::VertexFormat::Float4:
                 return 4;
             default:
                 DAWN_UNREACHABLE();
         }
     }
 
-    uint32_t ComponentCount(dawn::VertexFormat format) {
+    uint32_t ComponentCount(wgpu::VertexFormat format) {
         switch (format) {
-            case dawn::VertexFormat::UInt:
-            case dawn::VertexFormat::Int:
-            case dawn::VertexFormat::Float:
+            case wgpu::VertexFormat::UInt:
+            case wgpu::VertexFormat::Int:
+            case wgpu::VertexFormat::Float:
                 return 1;
-            case dawn::VertexFormat::UChar2:
-            case dawn::VertexFormat::UShort2:
-            case dawn::VertexFormat::UInt2:
-            case dawn::VertexFormat::Char2:
-            case dawn::VertexFormat::Short2:
-            case dawn::VertexFormat::Int2:
-            case dawn::VertexFormat::UChar2Norm:
-            case dawn::VertexFormat::Char2Norm:
-            case dawn::VertexFormat::UShort2Norm:
-            case dawn::VertexFormat::Short2Norm:
-            case dawn::VertexFormat::Half2:
-            case dawn::VertexFormat::Float2:
+            case wgpu::VertexFormat::UChar2:
+            case wgpu::VertexFormat::UShort2:
+            case wgpu::VertexFormat::UInt2:
+            case wgpu::VertexFormat::Char2:
+            case wgpu::VertexFormat::Short2:
+            case wgpu::VertexFormat::Int2:
+            case wgpu::VertexFormat::UChar2Norm:
+            case wgpu::VertexFormat::Char2Norm:
+            case wgpu::VertexFormat::UShort2Norm:
+            case wgpu::VertexFormat::Short2Norm:
+            case wgpu::VertexFormat::Half2:
+            case wgpu::VertexFormat::Float2:
                 return 2;
-            case dawn::VertexFormat::Int3:
-            case dawn::VertexFormat::UInt3:
-            case dawn::VertexFormat::Float3:
+            case wgpu::VertexFormat::Int3:
+            case wgpu::VertexFormat::UInt3:
+            case wgpu::VertexFormat::Float3:
                 return 3;
-            case dawn::VertexFormat::UChar4:
-            case dawn::VertexFormat::UShort4:
-            case dawn::VertexFormat::UInt4:
-            case dawn::VertexFormat::Char4:
-            case dawn::VertexFormat::Short4:
-            case dawn::VertexFormat::Int4:
-            case dawn::VertexFormat::UChar4Norm:
-            case dawn::VertexFormat::Char4Norm:
-            case dawn::VertexFormat::UShort4Norm:
-            case dawn::VertexFormat::Short4Norm:
-            case dawn::VertexFormat::Half4:
-            case dawn::VertexFormat::Float4:
+            case wgpu::VertexFormat::UChar4:
+            case wgpu::VertexFormat::UShort4:
+            case wgpu::VertexFormat::UInt4:
+            case wgpu::VertexFormat::Char4:
+            case wgpu::VertexFormat::Short4:
+            case wgpu::VertexFormat::Int4:
+            case wgpu::VertexFormat::UChar4Norm:
+            case wgpu::VertexFormat::Char4Norm:
+            case wgpu::VertexFormat::UShort4Norm:
+            case wgpu::VertexFormat::Short4Norm:
+            case wgpu::VertexFormat::Half4:
+            case wgpu::VertexFormat::Float4:
                 return 4;
             default:
                 DAWN_UNREACHABLE();
@@ -220,7 +220,7 @@ class VertexFormatTest : public DawnTest {
 
     // The length of vertexData is fixed to 3, it aligns to triangle vertex number
     template <typename T>
-    dawn::RenderPipeline MakeTestPipeline(dawn::VertexFormat format, std::vector<T>& expectedData) {
+    wgpu::RenderPipeline MakeTestPipeline(wgpu::VertexFormat format, std::vector<T>& expectedData) {
         bool isFloat = IsFloatFormat(format);
         bool isNormalized = IsNormalizedFormat(format);
         bool isUnsigned = IsUnsignedFormat(format);
@@ -263,8 +263,8 @@ class VertexFormatTest : public DawnTest {
         vs << "void main() {\n";
 
         // Hard code the triangle in the shader so that we don't have to add a vertex input for it.
-        vs << "    const vec2 pos[3] = vec2[3](vec2(-1.0f, 0.0f), vec2(-1.0f, -1.0f), vec2(0.0f, "
-              "-1.0f));\n";
+        vs << "    const vec2 pos[3] = vec2[3](vec2(-1.0f, 0.0f), vec2(-1.0f, 1.0f), vec2(0.0f, "
+              "1.0f));\n";
         vs << "    gl_Position = vec4(pos[gl_VertexIndex], 0.0, 1.0);\n";
 
         // Declare expected values.
@@ -340,11 +340,11 @@ class VertexFormatTest : public DawnTest {
         vs << "    }\n";
         vs << "}\n";
 
-        dawn::ShaderModule vsModule =
-            utils::CreateShaderModule(device, dawn::ShaderStage::Vertex, vs.str().c_str());
+        wgpu::ShaderModule vsModule =
+            utils::CreateShaderModule(device, utils::SingleShaderStage::Vertex, vs.str().c_str());
 
-        dawn::ShaderModule fsModule =
-            utils::CreateShaderModule(device, dawn::ShaderStage::Fragment, R"(
+        wgpu::ShaderModule fsModule =
+            utils::CreateShaderModule(device, utils::SingleShaderStage::Fragment, R"(
                 #version 450
                 layout(location = 0) in vec4 color;
                 layout(location = 0) out vec4 fragColor;
@@ -360,43 +360,45 @@ class VertexFormatTest : public DawnTest {
         }
 
         utils::ComboRenderPipelineDescriptor descriptor(device);
-        descriptor.cVertexStage.module = vsModule;
+        descriptor.vertexStage.module = vsModule;
         descriptor.cFragmentStage.module = fsModule;
-        descriptor.cVertexInput.bufferCount = 1;
-        descriptor.cVertexInput.cBuffers[0].stride = strideBytes;
-        descriptor.cVertexInput.cBuffers[0].attributeCount = 1;
-        descriptor.cVertexInput.cAttributes[0].format = format;
-        descriptor.cColorStates[0]->format = renderPass.colorFormat;
+        descriptor.cVertexState.vertexBufferCount = 1;
+        descriptor.cVertexState.cVertexBuffers[0].arrayStride = strideBytes;
+        descriptor.cVertexState.cVertexBuffers[0].attributeCount = 1;
+        descriptor.cVertexState.cAttributes[0].format = format;
+        descriptor.cColorStates[0].format = renderPass.colorFormat;
 
         return device.CreateRenderPipeline(&descriptor);
     }
 
     template <typename VertexType, typename ExpectedType>
-    void DoVertexFormatTest(dawn::VertexFormat format,
+    void DoVertexFormatTest(wgpu::VertexFormat format,
                             std::vector<VertexType> vertex,
                             std::vector<ExpectedType> expectedData) {
-        dawn::RenderPipeline pipeline = MakeTestPipeline(format, expectedData);
-        dawn::Buffer vertexBuffer =
-            utils::CreateBufferFromData(device, vertex.data(), vertex.size() * sizeof(VertexType),
-                                        dawn::BufferUsageBit::Vertex);
-        uint64_t zeroOffset = 0;
-        dawn::CommandEncoder encoder = device.CreateCommandEncoder();
+        wgpu::RenderPipeline pipeline = MakeTestPipeline(format, expectedData);
+        wgpu::Buffer vertexBuffer = utils::CreateBufferFromData(
+            device, vertex.data(), vertex.size() * sizeof(VertexType), wgpu::BufferUsage::Vertex);
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
         {
-            dawn::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass.renderPassInfo);
+            wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass.renderPassInfo);
             pass.SetPipeline(pipeline);
-            pass.SetVertexBuffers(0, 1, &vertexBuffer, &zeroOffset);
-            pass.Draw(3, 1, 0, 0);
+            pass.SetVertexBuffer(0, vertexBuffer);
+            pass.Draw(3);
             pass.EndPass();
         }
 
-        dawn::CommandBuffer commands = encoder.Finish();
+        wgpu::CommandBuffer commands = encoder.Finish();
         queue.Submit(1, &commands);
 
-        EXPECT_PIXEL_RGBA8_EQ(RGBA8(0, 255, 0, 255), renderPass.color, 0, 0);
+        EXPECT_PIXEL_RGBA8_EQ(RGBA8::kGreen, renderPass.color, 0, 0);
     }
 };
 
 TEST_P(VertexFormatTest, UChar2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint8_t> vertexData = {
         std::numeric_limits<uint8_t>::max(),
         0,
@@ -416,10 +418,14 @@ TEST_P(VertexFormatTest, UChar2) {
         std::numeric_limits<uint8_t>::max(), 0, std::numeric_limits<uint8_t>::min(), 2, 200, 201,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::UChar2, vertexData, expectedData);
+    DoVertexFormatTest(wgpu::VertexFormat::UChar2, vertexData, expectedData);
 }
 
 TEST_P(VertexFormatTest, UChar4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint8_t> vertexData = {
         std::numeric_limits<uint8_t>::max(),
         0,
@@ -435,10 +441,14 @@ TEST_P(VertexFormatTest, UChar4) {
         203,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::UChar4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UChar4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Char2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int8_t> vertexData = {
         std::numeric_limits<int8_t>::max(),
         0,
@@ -458,10 +468,14 @@ TEST_P(VertexFormatTest, Char2) {
         std::numeric_limits<int8_t>::max(), 0, std::numeric_limits<int8_t>::min(), -2, 120, -121,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Char2, vertexData, expectedData);
+    DoVertexFormatTest(wgpu::VertexFormat::Char2, vertexData, expectedData);
 }
 
 TEST_P(VertexFormatTest, Char4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int8_t> vertexData = {
         std::numeric_limits<int8_t>::max(),
         0,
@@ -477,10 +491,14 @@ TEST_P(VertexFormatTest, Char4) {
         -123,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Char4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Char4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UChar2Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint8_t> vertexData = {
         std::numeric_limits<uint8_t>::max(),
         std::numeric_limits<uint8_t>::min(),
@@ -503,10 +521,14 @@ TEST_P(VertexFormatTest, UChar2Norm) {
                                          200,
                                          201};
 
-    DoVertexFormatTest(dawn::VertexFormat::UChar2Norm, vertexData, expectedData);
+    DoVertexFormatTest(wgpu::VertexFormat::UChar2Norm, vertexData, expectedData);
 }
 
 TEST_P(VertexFormatTest, UChar4Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint8_t> vertexData = {std::numeric_limits<uint8_t>::max(),
                                        std::numeric_limits<uint8_t>::min(),
                                        0,
@@ -520,10 +542,14 @@ TEST_P(VertexFormatTest, UChar4Norm) {
                                        202,
                                        203};
 
-    DoVertexFormatTest(dawn::VertexFormat::UChar4Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UChar4Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Char2Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int8_t> vertexData = {
         std::numeric_limits<int8_t>::max(),
         std::numeric_limits<int8_t>::min(),
@@ -548,10 +574,14 @@ TEST_P(VertexFormatTest, Char2Norm) {
         -121,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Char2Norm, vertexData, expectedData);
+    DoVertexFormatTest(wgpu::VertexFormat::Char2Norm, vertexData, expectedData);
 }
 
 TEST_P(VertexFormatTest, Char4Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int8_t> vertexData = {std::numeric_limits<int8_t>::max(),
                                       std::numeric_limits<int8_t>::min(),
                                       0,
@@ -565,10 +595,14 @@ TEST_P(VertexFormatTest, Char4Norm) {
                                       102,
                                       -123};
 
-    DoVertexFormatTest(dawn::VertexFormat::Char4Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Char4Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UShort2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData = {std::numeric_limits<uint16_t>::max(),
                                         0,
                                         std::numeric_limits<uint16_t>::min(),
@@ -576,10 +610,14 @@ TEST_P(VertexFormatTest, UShort2) {
                                         65432,
                                         4890};
 
-    DoVertexFormatTest(dawn::VertexFormat::UShort2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UShort2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UShort4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData = {
         std::numeric_limits<uint16_t>::max(),
         std::numeric_limits<uint8_t>::max(),
@@ -595,10 +633,14 @@ TEST_P(VertexFormatTest, UShort4) {
         3467,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::UShort4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UShort4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Short2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int16_t> vertexData = {std::numeric_limits<int16_t>::max(),
                                        0,
                                        std::numeric_limits<int16_t>::min(),
@@ -606,10 +648,14 @@ TEST_P(VertexFormatTest, Short2) {
                                        3876,
                                        -3948};
 
-    DoVertexFormatTest(dawn::VertexFormat::Short2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Short2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Short4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int16_t> vertexData = {
         std::numeric_limits<int16_t>::max(),
         0,
@@ -625,10 +671,14 @@ TEST_P(VertexFormatTest, Short4) {
         -2987,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Short4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Short4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UShort2Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData = {std::numeric_limits<uint16_t>::max(),
                                         std::numeric_limits<uint16_t>::min(),
                                         std::numeric_limits<uint16_t>::max() / 2u,
@@ -636,10 +686,14 @@ TEST_P(VertexFormatTest, UShort2Norm) {
                                         3456,
                                         6543};
 
-    DoVertexFormatTest(dawn::VertexFormat::UShort2Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UShort2Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UShort4Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData = {std::numeric_limits<uint16_t>::max(),
                                         std::numeric_limits<uint16_t>::min(),
                                         0,
@@ -653,10 +707,14 @@ TEST_P(VertexFormatTest, UShort4Norm) {
                                         2987,
                                         2987};
 
-    DoVertexFormatTest(dawn::VertexFormat::UShort4Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UShort4Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Short2Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int16_t> vertexData = {std::numeric_limits<int16_t>::max(),
                                        std::numeric_limits<int16_t>::min(),
                                        std::numeric_limits<int16_t>::max() / 2,
@@ -664,10 +722,14 @@ TEST_P(VertexFormatTest, Short2Norm) {
                                        4987,
                                        -6789};
 
-    DoVertexFormatTest(dawn::VertexFormat::Short2Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Short2Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Short4Norm) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int16_t> vertexData = {std::numeric_limits<int16_t>::max(),
                                        std::numeric_limits<int16_t>::min(),
                                        0,
@@ -681,120 +743,180 @@ TEST_P(VertexFormatTest, Short4Norm) {
                                        20432,
                                        -2083};
 
-    DoVertexFormatTest(dawn::VertexFormat::Short4Norm, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Short4Norm, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Half2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData =
         Float32ToFloat16(std::vector<float>({14.8f, -0.0f, 22.5f, 1.3f, +0.0f, -24.8f}));
 
-    DoVertexFormatTest(dawn::VertexFormat::Half2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Half2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Half4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint16_t> vertexData = Float32ToFloat16(std::vector<float>(
         {+0.0f, -16.8f, 18.2f, -0.0f, 12.5f, 1.3f, 14.8f, -12.4f, 22.5f, -48.8f, 47.4f, -24.8f}));
 
-    DoVertexFormatTest(dawn::VertexFormat::Half4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Half4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Float) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<float> vertexData = {1.3f, +0.0f, -0.0f};
 
-    DoVertexFormatTest(dawn::VertexFormat::Float, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Float, vertexData, vertexData);
 
     vertexData = std::vector<float>{+1.0f, -1.0f, 18.23f};
 
-    DoVertexFormatTest(dawn::VertexFormat::Float, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Float, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Float2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<float> vertexData = {18.23f, -0.0f, +0.0f, +1.0f, 1.3f, -1.0f};
 
-    DoVertexFormatTest(dawn::VertexFormat::Float2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Float2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Float3) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<float> vertexData = {
         +0.0f, -1.0f, -0.0f, 1.0f, 1.3f, 99.45f, 23.6f, -81.2f, 55.0f,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Float3, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Float3, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Float4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<float> vertexData = {
         19.2f, -19.3f, +0.0f, 1.0f, -0.0f, 1.0f, 1.3f, -1.0f, 13.078f, 21.1965f, -1.1f, -1.2f,
     };
 
-    DoVertexFormatTest(dawn::VertexFormat::Float4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Float4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UInt) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint32_t> vertexData = {std::numeric_limits<uint32_t>::max(),
                                         std::numeric_limits<uint16_t>::max(),
                                         std::numeric_limits<uint8_t>::max()};
 
-    DoVertexFormatTest(dawn::VertexFormat::UInt, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UInt, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UInt2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint32_t> vertexData = {std::numeric_limits<uint32_t>::max(), 32,
                                         std::numeric_limits<uint16_t>::max(), 64,
                                         std::numeric_limits<uint8_t>::max(),  128};
 
-    DoVertexFormatTest(dawn::VertexFormat::UInt2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UInt2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UInt3) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint32_t> vertexData = {std::numeric_limits<uint32_t>::max(), 32,   64,
                                         std::numeric_limits<uint16_t>::max(), 164,  128,
                                         std::numeric_limits<uint8_t>::max(),  1283, 256};
 
-    DoVertexFormatTest(dawn::VertexFormat::UInt3, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UInt3, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, UInt4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<uint32_t> vertexData = {std::numeric_limits<uint32_t>::max(), 32,   64,  5460,
                                         std::numeric_limits<uint16_t>::max(), 164,  128, 0,
                                         std::numeric_limits<uint8_t>::max(),  1283, 256, 4567};
 
-    DoVertexFormatTest(dawn::VertexFormat::UInt4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::UInt4, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Int) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int32_t> vertexData = {std::numeric_limits<int32_t>::max(),
                                        std::numeric_limits<int32_t>::min(),
                                        std::numeric_limits<int8_t>::max()};
 
-    DoVertexFormatTest(dawn::VertexFormat::Int, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Int, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Int2) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int32_t> vertexData = {
         std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::min(),
         std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::min(),
         std::numeric_limits<int8_t>::max(),  std::numeric_limits<int8_t>::min()};
 
-    DoVertexFormatTest(dawn::VertexFormat::Int2, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Int2, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Int3) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int32_t> vertexData = {
         std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::min(), 64,
         std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::min(), 128,
         std::numeric_limits<int8_t>::max(),  std::numeric_limits<int8_t>::min(),  256};
 
-    DoVertexFormatTest(dawn::VertexFormat::Int3, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Int3, vertexData, vertexData);
 }
 
 TEST_P(VertexFormatTest, Int4) {
+    // TODO(cwallez@chromium.org): Failing because of a SPIRV-Cross issue.
+    // See http://crbug.com/dawn/259
+    DAWN_SKIP_TEST_IF(IsMetal() && IsIntel());
+
     std::vector<int32_t> vertexData = {
         std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::min(), 64,   -5460,
         std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::min(), -128, 0,
         std::numeric_limits<int8_t>::max(),  std::numeric_limits<int8_t>::min(),  256,  -4567};
 
-    DoVertexFormatTest(dawn::VertexFormat::Int4, vertexData, vertexData);
+    DoVertexFormatTest(wgpu::VertexFormat::Int4, vertexData, vertexData);
 }
 
-DAWN_INSTANTIATE_TEST(VertexFormatTest, D3D12Backend, MetalBackend, OpenGLBackend, VulkanBackend);
+DAWN_INSTANTIATE_TEST(VertexFormatTest,
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

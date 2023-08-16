@@ -379,7 +379,7 @@ LayoutObject* LayoutObject::CreateObject(Element* element,
      || element->getAttribute(HTMLNames::idAttr).Contains("ad320x50")
      || element->getAttribute(HTMLNames::classAttr) == "remove-ads"
      || element->getAttribute(HTMLNames::classAttr) == "socialfooter"
-     || element->getAttribute(HTMLNames::idAttr).Contains("cookie")
+     || (element->getAttribute(HTMLNames::idAttr).Contains("cookie") && !element->getAttribute(HTMLNames::idAttr).Contains("cookie-banner"))
      || element->getAttribute(HTMLNames::idAttr).Contains("share-bar")
      || element->getAttribute(HTMLNames::idAttr).Contains("my_web_push_")
      || element->getAttribute(HTMLNames::idAttr).Contains("floatLayer1")
@@ -443,6 +443,29 @@ LayoutObject* LayoutObject::CreateObject(Element* element,
      || element->getAttribute(HTMLNames::classAttr).Contains("inlineOverlay")
      || element->getAttribute(HTMLNames::classAttr).Contains("inlinePopup")
      || element->getAttribute(HTMLNames::classAttr).Contains("popup_tosEdition")
+     || element->getAttribute(HTMLNames::classAttr).Contains("upsell-dialog-lightbox")
+     || element->nodeName() == "ytm-companion-slot"
+     || element->nodeName() == "ytd-companion-slot-renderer"
+     || element->nodeName() == "ytd-promoted-sparkles-web-renderer"
+     || element->nodeName() == "ytd-single-option-survey-renderer"
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-display-ad-")
+     || element->getAttribute(HTMLNames::classAttr).Contains("masthead-ad")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-companion-slot-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-video-masthead-ad-v3-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytm-promoted-sparkles-text-search-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytm-promoted-sparkles-web-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-ad-image-overlay")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-action-companion-ad-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-ad-overlay-container")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-ad-progress")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-carousel-ad-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-player-legacy-desktop-watch-ads-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-promoted-sparkles-text-search-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytd-search-pyv-renderer")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-ad-message-container")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-ad-player-overlay-flyout-cta")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-paid-content-overlay-text")
+     || element->getAttribute(HTMLNames::classAttr).Contains("ytp-paid-content-overlay-text")
      || element->getAttribute(HTMLNames::typeAttr).Contains("24smi")
      || element->getAttribute(HTMLNames::typeAttr).Contains("a8")
      || element->getAttribute(HTMLNames::typeAttr).Contains("a9")

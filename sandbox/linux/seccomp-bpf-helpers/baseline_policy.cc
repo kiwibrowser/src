@@ -174,9 +174,11 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
   }
 
   if (sysno == __NR_madvise) {
-    // Only allow MADV_DONTNEED and MADV_FREE.
+    // Only allow MADV_DONTNEED, MADV_RANDOM, MADV_NORMAL and MADV_FREE.
     const Arg<int> advice(2);
-    return If(AnyOf(advice == MADV_DONTNEED
+    return If(AnyOf(advice == MADV_DONTNEED,
+                    advice == MADV_RANDOM,
+                    advice == MADV_NORMAL
 #if defined(MADV_FREE)
                     // MADV_FREE was introduced in Linux 4.5 and started being
                     // defined in glibc 2.24.

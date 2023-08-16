@@ -15,27 +15,36 @@
 #include "dawn_native/d3d12/QueueD3D12.h"
 
 #include "dawn_native/d3d12/CommandBufferD3D12.h"
+#include "dawn_native/d3d12/D3D12Error.h"
 #include "dawn_native/d3d12/DeviceD3D12.h"
+#include "dawn_platform/DawnPlatform.h"
+#include "dawn_platform/tracing/TraceEvent.h"
 
 namespace dawn_native { namespace d3d12 {
 
     Queue::Queue(Device* device) : QueueBase(device) {
     }
 
-    void Queue::SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) {
+    MaybeError Queue::SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) {
         Device* device = ToBackend(GetDevice());
 
         device->Tick();
 
-        device->OpenCommandList(&mCommandList);
+        CommandRecordingContext* commandContext;
+        DAWN_TRY_ASSIGN(commandContext, device->GetPendingCommandContext());
+
+        TRACE_EVENT_BEGIN0(GetDevice()->GetPlatform(), Recording,
+                           "CommandBufferD3D12::RecordCommands");
         for (uint32_t i = 0; i < commandCount; ++i) {
-            ToBackend(commands[i])->RecordCommands(mCommandList, i);
+            DAWN_TRY(ToBackend(commands[i])->RecordCommands(commandContext));
         }
-        ASSERT_SUCCESS(mCommandList->Close());
+        TRACE_EVENT_END0(GetDevice()->GetPlatform(), Recording,
+                         "CommandBufferD3D12::RecordCommands");
 
-        device->ExecuteCommandLists({mCommandList.Get()});
+        DAWN_TRY(device->ExecutePendingCommandContext());
 
-        device->NextSerial();
+        DAWN_TRY(device->NextSerial());
+        return {};
     }
 
 }}  // namespace dawn_native::d3d12

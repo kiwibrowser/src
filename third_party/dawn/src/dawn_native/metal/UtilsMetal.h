@@ -16,12 +16,42 @@
 #define DAWNNATIVE_METAL_UTILSMETAL_H_
 
 #include "dawn_native/dawn_platform.h"
+#include "dawn_native/metal/DeviceMTL.h"
+#include "dawn_native/metal/TextureMTL.h"
 
 #import <Metal/Metal.h>
 
 namespace dawn_native { namespace metal {
 
-    MTLCompareFunction ToMetalCompareFunction(dawn::CompareFunction compareFunction);
+    MTLCompareFunction ToMetalCompareFunction(wgpu::CompareFunction compareFunction);
+
+    struct TextureBufferCopySplit {
+        static constexpr uint32_t kMaxTextureBufferCopyRegions = 3;
+
+        struct CopyInfo {
+            NSUInteger bufferOffset;
+            NSUInteger bytesPerRow;
+            NSUInteger bytesPerImage;
+            Origin3D textureOrigin;
+            Extent3D copyExtent;
+        };
+
+        uint32_t count = 0;
+        std::array<CopyInfo, kMaxTextureBufferCopyRegions> copies;
+    };
+
+    TextureBufferCopySplit ComputeTextureBufferCopySplit(const Texture* texture,
+                                                         uint32_t mipLevel,
+                                                         Origin3D origin,
+                                                         Extent3D copyExtent,
+                                                         uint64_t bufferSize,
+                                                         uint64_t bufferOffset,
+                                                         uint32_t bytesPerRow,
+                                                         uint32_t rowsPerImage);
+
+    void EnsureDestinationTextureInitialized(Texture* texture,
+                                             const TextureCopy& dst,
+                                             const Extent3D& size);
 
 }}  // namespace dawn_native::metal
 

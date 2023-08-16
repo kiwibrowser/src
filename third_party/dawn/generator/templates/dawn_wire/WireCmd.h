@@ -15,15 +15,30 @@
 #ifndef DAWNWIRE_WIRECMD_AUTOGEN_H_
 #define DAWNWIRE_WIRECMD_AUTOGEN_H_
 
-#include <dawn/dawn.h>
+#include <dawn/webgpu.h>
 
 namespace dawn_wire {
 
     using ObjectId = uint32_t;
-    using ObjectSerial = uint32_t;
+    using ObjectGeneration = uint32_t;
     struct ObjectHandle {
       ObjectId id;
-      ObjectSerial serial;
+      ObjectGeneration generation;
+
+      ObjectHandle();
+      ObjectHandle(ObjectId id, ObjectGeneration generation);
+
+      ObjectHandle(const volatile ObjectHandle& rhs);
+      ObjectHandle& operator=(const volatile ObjectHandle& rhs);
+
+      // MSVC has a bug where it thinks the volatile copy assignment is a duplicate.
+      // Workaround this by forwarding to a different function AssignFrom.
+      template <typename T>
+      ObjectHandle& operator=(const T& rhs) {
+          return AssignFrom(rhs);
+      }
+      ObjectHandle& AssignFrom(const ObjectHandle& rhs);
+      ObjectHandle& AssignFrom(const volatile ObjectHandle& rhs);
     };
 
     enum class DeserializeResult {
@@ -87,7 +102,7 @@ namespace dawn_wire {
         //* Serialize the structure and everything it points to into serializeBuffer which must be
         //* big enough to contain all the data (as queried from GetRequiredSize).
         void Serialize(char* serializeBuffer
-            {%- if command.has_dawn_object -%}
+            {%- if not is_return_command -%}
                 , const ObjectIdProvider& objectIdProvider
             {%- endif -%}
         ) const;
@@ -99,8 +114,8 @@ namespace dawn_wire {
         //* Deserialize returns:
         //*  - Success if everything went well (yay!)
         //*  - FatalError is something bad happened (buffer too small for example)
-        DeserializeResult Deserialize(const char** buffer, size_t* size, DeserializeAllocator* allocator
-            {%- if command.has_dawn_object -%}
+        DeserializeResult Deserialize(const volatile char** buffer, size_t* size, DeserializeAllocator* allocator
+            {%- if command.may_have_dawn_object -%}
                 , const ObjectIdResolver& resolver
             {%- endif -%}
         );

@@ -24,46 +24,57 @@ namespace dawn_native { namespace metal {
         : PipelineLayoutBase(device, descriptor) {
         // Each stage has its own numbering namespace in CompilerMSL.
         for (auto stage : IterateStages(kAllStages)) {
-            // Buffer number 0 is reserved for push constants
-            uint32_t bufferIndex = 1;
+            uint32_t bufferIndex = 0;
             uint32_t samplerIndex = 0;
             uint32_t textureIndex = 0;
 
-            for (uint32_t group : IterateBitSet(GetBindGroupLayoutsMask())) {
-                const auto& groupInfo = GetBindGroupLayout(group)->GetBindingInfo();
-                for (size_t binding = 0; binding < kMaxBindingsPerGroup; ++binding) {
-                    if (!(groupInfo.visibilities[binding] & StageBit(stage))) {
-                        continue;
-                    }
-                    if (!groupInfo.mask[binding]) {
+            for (BindGroupIndex group : IterateBitSet(GetBindGroupLayoutsMask())) {
+                mIndexInfo[stage][group].resize(GetBindGroupLayout(group)->GetBindingCount());
+
+                for (BindingIndex bindingIndex{0};
+                     bindingIndex < GetBindGroupLayout(group)->GetBindingCount(); ++bindingIndex) {
+                    const BindingInfo& bindingInfo =
+                        GetBindGroupLayout(group)->GetBindingInfo(bindingIndex);
+                    if (!(bindingInfo.visibility & StageBit(stage))) {
                         continue;
                     }
 
-                    switch (groupInfo.types[binding]) {
-                        case dawn::BindingType::UniformBuffer:
-                        case dawn::BindingType::StorageBuffer:
-                        case dawn::BindingType::DynamicUniformBuffer:
-                        case dawn::BindingType::DynamicStorageBuffer:
-                            mIndexInfo[stage][group][binding] = bufferIndex;
+                    switch (bindingInfo.type) {
+                        case wgpu::BindingType::UniformBuffer:
+                        case wgpu::BindingType::StorageBuffer:
+                        case wgpu::BindingType::ReadonlyStorageBuffer:
+                            mIndexInfo[stage][group][bindingIndex] = bufferIndex;
                             bufferIndex++;
                             break;
-                        case dawn::BindingType::Sampler:
-                            mIndexInfo[stage][group][binding] = samplerIndex;
+                        case wgpu::BindingType::Sampler:
+                        case wgpu::BindingType::ComparisonSampler:
+                            mIndexInfo[stage][group][bindingIndex] = samplerIndex;
                             samplerIndex++;
                             break;
-                        case dawn::BindingType::SampledTexture:
-                            mIndexInfo[stage][group][binding] = textureIndex;
+                        case wgpu::BindingType::SampledTexture:
+                        case wgpu::BindingType::ReadonlyStorageTexture:
+                        case wgpu::BindingType::WriteonlyStorageTexture:
+                            mIndexInfo[stage][group][bindingIndex] = textureIndex;
                             textureIndex++;
+                            break;
+                        case wgpu::BindingType::StorageTexture:
+                            UNREACHABLE();
                             break;
                     }
                 }
             }
+
+            mBufferBindingCount[stage] = bufferIndex;
         }
     }
 
     const PipelineLayout::BindingIndexInfo& PipelineLayout::GetBindingIndexInfo(
-        dawn::ShaderStage stage) const {
+        SingleShaderStage stage) const {
         return mIndexInfo[stage];
+    }
+
+    uint32_t PipelineLayout::GetBufferBindingCount(SingleShaderStage stage) {
+        return mBufferBindingCount[stage];
     }
 
 }}  // namespace dawn_native::metal

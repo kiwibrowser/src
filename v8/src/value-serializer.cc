@@ -810,6 +810,10 @@ Maybe<bool> ValueSerializer::WriteJSArrayBuffer(
     WriteVarint(index.FromJust());
     return ThrowIfOutOfMemory();
   }
+  if (!array_buffer->is_neuterable()) {
+    ThrowDataCloneError(MessageTemplate::kDataCloneErrorNeuteredArrayBuffer);
+    return Nothing<bool>();
+  }
 
   uint32_t* transfer_entry = array_buffer_transfer_map_.Find(array_buffer);
   if (transfer_entry) {

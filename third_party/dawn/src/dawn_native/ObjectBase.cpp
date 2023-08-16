@@ -16,13 +16,14 @@
 
 namespace dawn_native {
 
-    ObjectBase::ObjectBase(DeviceBase* device) : mDevice(device), mIsError(false) {
+    static constexpr uint64_t kErrorPayload = 0;
+    static constexpr uint64_t kNotErrorPayload = 1;
+
+    ObjectBase::ObjectBase(DeviceBase* device) : RefCounted(kNotErrorPayload), mDevice(device) {
     }
 
-    ObjectBase::ObjectBase(DeviceBase* device, ErrorTag) : mDevice(device), mIsError(true) {
-    }
-
-    ObjectBase::~ObjectBase() {
+    ObjectBase::ObjectBase(DeviceBase* device, ErrorTag)
+        : RefCounted(kErrorPayload), mDevice(device) {
     }
 
     DeviceBase* ObjectBase::GetDevice() const {
@@ -30,7 +31,7 @@ namespace dawn_native {
     }
 
     bool ObjectBase::IsError() const {
-        return mIsError;
+        return GetRefCountPayload() == kErrorPayload;
     }
 
 }  // namespace dawn_native

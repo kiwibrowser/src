@@ -23,67 +23,84 @@ namespace dawn_native { namespace opengl {
 
     namespace {
 
-        GLenum GLPrimitiveTopology(dawn::PrimitiveTopology primitiveTopology) {
+        GLenum GLPrimitiveTopology(wgpu::PrimitiveTopology primitiveTopology) {
             switch (primitiveTopology) {
-                case dawn::PrimitiveTopology::PointList:
+                case wgpu::PrimitiveTopology::PointList:
                     return GL_POINTS;
-                case dawn::PrimitiveTopology::LineList:
+                case wgpu::PrimitiveTopology::LineList:
                     return GL_LINES;
-                case dawn::PrimitiveTopology::LineStrip:
+                case wgpu::PrimitiveTopology::LineStrip:
                     return GL_LINE_STRIP;
-                case dawn::PrimitiveTopology::TriangleList:
+                case wgpu::PrimitiveTopology::TriangleList:
                     return GL_TRIANGLES;
-                case dawn::PrimitiveTopology::TriangleStrip:
+                case wgpu::PrimitiveTopology::TriangleStrip:
                     return GL_TRIANGLE_STRIP;
                 default:
                     UNREACHABLE();
             }
         }
 
-        GLenum GLBlendFactor(dawn::BlendFactor factor, bool alpha) {
+        void ApplyFrontFaceAndCulling(const OpenGLFunctions& gl,
+                                      wgpu::FrontFace face,
+                                      wgpu::CullMode mode) {
+            if (mode == wgpu::CullMode::None) {
+                gl.Disable(GL_CULL_FACE);
+            } else {
+                gl.Enable(GL_CULL_FACE);
+                // Note that we invert winding direction in OpenGL. Because Y axis is up in OpenGL,
+                // which is different from WebGPU and other backends (Y axis is down).
+                GLenum direction = (face == wgpu::FrontFace::CCW) ? GL_CW : GL_CCW;
+                gl.FrontFace(direction);
+
+                GLenum cullMode = (mode == wgpu::CullMode::Front) ? GL_FRONT : GL_BACK;
+                gl.CullFace(cullMode);
+            }
+        }
+
+        GLenum GLBlendFactor(wgpu::BlendFactor factor, bool alpha) {
             switch (factor) {
-                case dawn::BlendFactor::Zero:
+                case wgpu::BlendFactor::Zero:
                     return GL_ZERO;
-                case dawn::BlendFactor::One:
+                case wgpu::BlendFactor::One:
                     return GL_ONE;
-                case dawn::BlendFactor::SrcColor:
+                case wgpu::BlendFactor::SrcColor:
                     return GL_SRC_COLOR;
-                case dawn::BlendFactor::OneMinusSrcColor:
+                case wgpu::BlendFactor::OneMinusSrcColor:
                     return GL_ONE_MINUS_SRC_COLOR;
-                case dawn::BlendFactor::SrcAlpha:
+                case wgpu::BlendFactor::SrcAlpha:
                     return GL_SRC_ALPHA;
-                case dawn::BlendFactor::OneMinusSrcAlpha:
+                case wgpu::BlendFactor::OneMinusSrcAlpha:
                     return GL_ONE_MINUS_SRC_ALPHA;
-                case dawn::BlendFactor::DstColor:
+                case wgpu::BlendFactor::DstColor:
                     return GL_DST_COLOR;
-                case dawn::BlendFactor::OneMinusDstColor:
+                case wgpu::BlendFactor::OneMinusDstColor:
                     return GL_ONE_MINUS_DST_COLOR;
-                case dawn::BlendFactor::DstAlpha:
+                case wgpu::BlendFactor::DstAlpha:
                     return GL_DST_ALPHA;
-                case dawn::BlendFactor::OneMinusDstAlpha:
+                case wgpu::BlendFactor::OneMinusDstAlpha:
                     return GL_ONE_MINUS_DST_ALPHA;
-                case dawn::BlendFactor::SrcAlphaSaturated:
+                case wgpu::BlendFactor::SrcAlphaSaturated:
                     return GL_SRC_ALPHA_SATURATE;
-                case dawn::BlendFactor::BlendColor:
+                case wgpu::BlendFactor::BlendColor:
                     return alpha ? GL_CONSTANT_ALPHA : GL_CONSTANT_COLOR;
-                case dawn::BlendFactor::OneMinusBlendColor:
+                case wgpu::BlendFactor::OneMinusBlendColor:
                     return alpha ? GL_ONE_MINUS_CONSTANT_ALPHA : GL_ONE_MINUS_CONSTANT_COLOR;
                 default:
                     UNREACHABLE();
             }
         }
 
-        GLenum GLBlendMode(dawn::BlendOperation operation) {
+        GLenum GLBlendMode(wgpu::BlendOperation operation) {
             switch (operation) {
-                case dawn::BlendOperation::Add:
+                case wgpu::BlendOperation::Add:
                     return GL_FUNC_ADD;
-                case dawn::BlendOperation::Subtract:
+                case wgpu::BlendOperation::Subtract:
                     return GL_FUNC_SUBTRACT;
-                case dawn::BlendOperation::ReverseSubtract:
+                case wgpu::BlendOperation::ReverseSubtract:
                     return GL_FUNC_REVERSE_SUBTRACT;
-                case dawn::BlendOperation::Min:
+                case wgpu::BlendOperation::Min:
                     return GL_MIN;
-                case dawn::BlendOperation::Max:
+                case wgpu::BlendOperation::Max:
                     return GL_MAX;
                 default:
                     UNREACHABLE();
@@ -105,29 +122,29 @@ namespace dawn_native { namespace opengl {
             } else {
                 gl.Disablei(GL_BLEND, attachment);
             }
-            gl.ColorMaski(attachment, descriptor->writeMask & dawn::ColorWriteMask::Red,
-                          descriptor->writeMask & dawn::ColorWriteMask::Green,
-                          descriptor->writeMask & dawn::ColorWriteMask::Blue,
-                          descriptor->writeMask & dawn::ColorWriteMask::Alpha);
+            gl.ColorMaski(attachment, descriptor->writeMask & wgpu::ColorWriteMask::Red,
+                          descriptor->writeMask & wgpu::ColorWriteMask::Green,
+                          descriptor->writeMask & wgpu::ColorWriteMask::Blue,
+                          descriptor->writeMask & wgpu::ColorWriteMask::Alpha);
         }
 
-        GLuint OpenGLStencilOperation(dawn::StencilOperation stencilOperation) {
+        GLuint OpenGLStencilOperation(wgpu::StencilOperation stencilOperation) {
             switch (stencilOperation) {
-                case dawn::StencilOperation::Keep:
+                case wgpu::StencilOperation::Keep:
                     return GL_KEEP;
-                case dawn::StencilOperation::Zero:
+                case wgpu::StencilOperation::Zero:
                     return GL_ZERO;
-                case dawn::StencilOperation::Replace:
+                case wgpu::StencilOperation::Replace:
                     return GL_REPLACE;
-                case dawn::StencilOperation::Invert:
+                case wgpu::StencilOperation::Invert:
                     return GL_INVERT;
-                case dawn::StencilOperation::IncrementClamp:
+                case wgpu::StencilOperation::IncrementClamp:
                     return GL_INCR;
-                case dawn::StencilOperation::DecrementClamp:
+                case wgpu::StencilOperation::DecrementClamp:
                     return GL_DECR;
-                case dawn::StencilOperation::IncrementWrap:
+                case wgpu::StencilOperation::IncrementWrap:
                     return GL_INCR_WRAP;
-                case dawn::StencilOperation::DecrementWrap:
+                case wgpu::StencilOperation::DecrementWrap:
                     return GL_DECR_WRAP;
                 default:
                     UNREACHABLE();
@@ -138,7 +155,7 @@ namespace dawn_native { namespace opengl {
                                     const DepthStencilStateDescriptor* descriptor,
                                     PersistentPipelineState* persistentPipelineState) {
             // Depth writes only occur if depth is enabled
-            if (descriptor->depthCompare == dawn::CompareFunction::Always &&
+            if (descriptor->depthCompare == wgpu::CompareFunction::Always &&
                 !descriptor->depthWriteEnabled) {
                 gl.Disable(GL_DEPTH_TEST);
             } else {
@@ -181,11 +198,11 @@ namespace dawn_native { namespace opengl {
           mVertexArrayObject(0),
           mGlPrimitiveTopology(GLPrimitiveTopology(GetPrimitiveTopology())) {
         PerStage<const ShaderModule*> modules(nullptr);
-        modules[dawn::ShaderStage::Vertex] = ToBackend(descriptor->vertexStage->module);
-        modules[dawn::ShaderStage::Fragment] = ToBackend(descriptor->fragmentStage->module);
+        modules[SingleShaderStage::Vertex] = ToBackend(descriptor->vertexStage.module);
+        modules[SingleShaderStage::Fragment] = ToBackend(descriptor->fragmentStage->module);
 
         PipelineGL::Initialize(device->gl, ToBackend(GetLayout()), modules);
-        CreateVAOForVertexInput(descriptor->vertexInput);
+        CreateVAOForVertexState(descriptor->vertexState);
     }
 
     RenderPipeline::~RenderPipeline() {
@@ -198,28 +215,28 @@ namespace dawn_native { namespace opengl {
         return mGlPrimitiveTopology;
     }
 
-    void RenderPipeline::CreateVAOForVertexInput(const VertexInputDescriptor* vertexInput) {
+    void RenderPipeline::CreateVAOForVertexState(const VertexStateDescriptor* vertexState) {
         const OpenGLFunctions& gl = ToBackend(GetDevice())->gl;
 
         gl.GenVertexArrays(1, &mVertexArrayObject);
         gl.BindVertexArray(mVertexArrayObject);
 
-        for (uint32_t location : IterateBitSet(GetAttributesSetMask())) {
+        for (uint32_t location : IterateBitSet(GetAttributeLocationsUsed())) {
             const auto& attribute = GetAttribute(location);
             gl.EnableVertexAttribArray(location);
 
-            attributesUsingInput[attribute.inputSlot][location] = true;
-            auto input = GetInput(attribute.inputSlot);
+            attributesUsingVertexBuffer[attribute.vertexBufferSlot][location] = true;
+            const VertexBufferInfo& vertexBuffer = GetVertexBuffer(attribute.vertexBufferSlot);
 
-            if (input.stride == 0) {
+            if (vertexBuffer.arrayStride == 0) {
                 // Emulate a stride of zero (constant vertex attribute) by
                 // setting the attribute instance divisor to a huge number.
                 gl.VertexAttribDivisor(location, 0xffffffff);
             } else {
-                switch (input.stepMode) {
-                    case dawn::InputStepMode::Vertex:
+                switch (vertexBuffer.stepMode) {
+                    case wgpu::InputStepMode::Vertex:
                         break;
-                    case dawn::InputStepMode::Instance:
+                    case wgpu::InputStepMode::Instance:
                         gl.VertexAttribDivisor(location, 1);
                         break;
                     default:
@@ -236,7 +253,11 @@ namespace dawn_native { namespace opengl {
         ASSERT(mVertexArrayObject);
         gl.BindVertexArray(mVertexArrayObject);
 
+        ApplyFrontFaceAndCulling(gl, GetFrontFace(), GetCullMode());
+
         ApplyDepthStencilState(gl, GetDepthStencilStateDescriptor(), &persistentPipelineState);
+
+        gl.SampleMaski(0, GetSampleMask());
 
         for (uint32_t attachmentSlot : IterateBitSet(GetColorAttachmentsMask())) {
             ApplyColorState(gl, attachmentSlot, GetColorStateDescriptor(attachmentSlot));

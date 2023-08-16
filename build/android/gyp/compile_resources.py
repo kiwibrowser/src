@@ -33,22 +33,6 @@ _SOURCE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 sys.path.insert(1, os.path.join(_SOURCE_ROOT, 'third_party'))
 from jinja2 import Template # pylint: disable=F0401
 
-# A variation of this lists also exists in:
-# //base/android/java/src/org/chromium/base/LocaleUtils.java
-_CHROME_TO_ANDROID_LOCALE_MAP = {
-    'en-GB': 'en-rGB',
-    'en-US': 'en-rUS',
-    'es-419': 'es-rUS',
-    'fil': 'tl',
-    'he': 'iw',
-    'id': 'in',
-    'pt-PT': 'pt-rPT',
-    'pt-BR': 'pt-rBR',
-    'yi': 'ji',
-    'zh-CN': 'zh-rCN',
-    'zh-TW': 'zh-rTW',
-}
-
 # Pngs that we shouldn't convert to webp. Please add rationale when updating.
 _PNG_WEBP_BLACKLIST_PATTERN = re.compile('|'.join([
     # Crashes on Galaxy S5 running L (https://crbug.com/807059).
@@ -247,9 +231,9 @@ def _ToAaptLocales(locale_whitelist, support_zh_hk):
   """Converts the list of Chrome locales to aapt config locales."""
   ret = set()
   for locale in locale_whitelist:
-    locale = _CHROME_TO_ANDROID_LOCALE_MAP.get(locale, locale)
+    locale = resource_utils.CHROME_TO_ANDROID_LOCALE_MAP.get(locale, locale)
     if locale is None or ('-' in locale and '-r' not in locale):
-      raise Exception('_CHROME_TO_ANDROID_LOCALE_MAP needs updating.'
+      raise Exception('CHROME_TO_ANDROID_LOCALE_MAP needs updating.'
                       ' Found: %s' % locale)
     ret.add(locale)
     # Always keep non-regional fall-backs.

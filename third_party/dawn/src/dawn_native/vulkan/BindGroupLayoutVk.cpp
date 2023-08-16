@@ -15,22 +15,29 @@
 #include "dawn_native/vulkan/BindGroupLayoutVk.h"
 
 #include "common/BitSetIterator.h"
+#include "common/ityp_vector.h"
+#include "dawn_native/vulkan/BindGroupVk.h"
+#include "dawn_native/vulkan/DescriptorSetAllocator.h"
 #include "dawn_native/vulkan/DeviceVk.h"
+#include "dawn_native/vulkan/FencedDeleter.h"
+#include "dawn_native/vulkan/VulkanError.h"
+
+#include <map>
 
 namespace dawn_native { namespace vulkan {
 
     namespace {
 
-        VkShaderStageFlags VulkanShaderStageFlags(dawn::ShaderStageBit stages) {
+        VkShaderStageFlags VulkanShaderStageFlags(wgpu::ShaderStage stages) {
             VkShaderStageFlags flags = 0;
 
-            if (stages & dawn::ShaderStageBit::Vertex) {
+            if (stages & wgpu::ShaderStage::Vertex) {
                 flags |= VK_SHADER_STAGE_VERTEX_BIT;
             }
-            if (stages & dawn::ShaderStageBit::Fragment) {
+            if (stages & wgpu::ShaderStage::Fragment) {
                 flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
             }
-            if (stages & dawn::ShaderStageBit::Compute) {
+            if (stages & wgpu::ShaderStage::Compute) {
                 flags |= VK_SHADER_STAGE_COMPUTE_BIT;
             }
 
@@ -39,63 +46,112 @@ namespace dawn_native { namespace vulkan {
 
     }  // anonymous namespace
 
-    VkDescriptorType VulkanDescriptorType(dawn::BindingType type) {
+    VkDescriptorType VulkanDescriptorType(wgpu::BindingType type, bool isDynamic) {
         switch (type) {
-            case dawn::BindingType::UniformBuffer:
+            case wgpu::BindingType::UniformBuffer:
+                if (isDynamic) {
+                    return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                }
                 return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            case dawn::BindingType::Sampler:
+            case wgpu::BindingType::Sampler:
+            case wgpu::BindingType::ComparisonSampler:
                 return VK_DESCRIPTOR_TYPE_SAMPLER;
-            case dawn::BindingType::SampledTexture:
+            case wgpu::BindingType::SampledTexture:
                 return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-            case dawn::BindingType::StorageBuffer:
+            case wgpu::BindingType::StorageBuffer:
+            case wgpu::BindingType::ReadonlyStorageBuffer:
+                if (isDynamic) {
+                    return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+                }
                 return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            case dawn::BindingType::DynamicUniformBuffer:
-                return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-            case dawn::BindingType::DynamicStorageBuffer:
-                return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            case wgpu::BindingType::ReadonlyStorageTexture:
+            case wgpu::BindingType::WriteonlyStorageTexture:
+                return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            case wgpu::BindingType::StorageTexture:
             default:
                 UNREACHABLE();
         }
     }
 
-    BindGroupLayout::BindGroupLayout(Device* device, const BindGroupLayoutDescriptor* descriptor)
-        : BindGroupLayoutBase(device, descriptor) {
-        const auto& info = GetBindingInfo();
+    // static
+    ResultOrError<BindGroupLayout*> BindGroupLayout::Create(
+        Device* device,
+        const BindGroupLayoutDescriptor* descriptor) {
+        Ref<BindGroupLayout> bgl = AcquireRef(new BindGroupLayout(device, descriptor));
+        DAWN_TRY(bgl->Initialize());
+        return bgl.Detach();
+    }
 
+    MaybeError BindGroupLayout::Initialize() {
         // Compute the bindings that will be chained in the DescriptorSetLayout create info. We add
         // one entry per binding set. This might be optimized by computing continuous ranges of
         // bindings of the same type.
-        uint32_t numBindings = 0;
-        std::array<VkDescriptorSetLayoutBinding, kMaxBindingsPerGroup> bindings;
-        for (uint32_t bindingIndex : IterateBitSet(info.mask)) {
-            auto& binding = bindings[numBindings];
-            binding.binding = bindingIndex;
-            binding.descriptorType = VulkanDescriptorType(info.types[bindingIndex]);
-            binding.descriptorCount = 1;
-            binding.stageFlags = VulkanShaderStageFlags(info.visibilities[bindingIndex]);
-            binding.pImmutableSamplers = nullptr;
+        ityp::vector<BindingIndex, VkDescriptorSetLayoutBinding> bindings;
+        bindings.reserve(GetBindingCount());
 
-            numBindings++;
+        for (const auto& it : GetBindingMap()) {
+            BindingNumber bindingNumber = it.first;
+            BindingIndex bindingIndex = it.second;
+            const BindingInfo& bindingInfo = GetBindingInfo(bindingIndex);
+
+            VkDescriptorSetLayoutBinding vkBinding;
+            vkBinding.binding = static_cast<uint32_t>(bindingNumber);
+            vkBinding.descriptorType =
+                VulkanDescriptorType(bindingInfo.type, bindingInfo.hasDynamicOffset);
+            vkBinding.descriptorCount = 1;
+            vkBinding.stageFlags = VulkanShaderStageFlags(bindingInfo.visibility);
+            vkBinding.pImmutableSamplers = nullptr;
+
+            bindings.emplace_back(vkBinding);
         }
 
         VkDescriptorSetLayoutCreateInfo createInfo;
         createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         createInfo.pNext = nullptr;
         createInfo.flags = 0;
-        createInfo.bindingCount = numBindings;
+        createInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         createInfo.pBindings = bindings.data();
 
-        if (device->fn.CreateDescriptorSetLayout(device->GetVkDevice(), &createInfo, nullptr,
-                                                 &mHandle) != VK_SUCCESS) {
-            ASSERT(false);
+        Device* device = ToBackend(GetDevice());
+        DAWN_TRY(CheckVkSuccess(device->fn.CreateDescriptorSetLayout(
+                                    device->GetVkDevice(), &createInfo, nullptr, &*mHandle),
+                                "CreateDescriptorSetLayout"));
+
+        // Compute the size of descriptor pools used for this layout.
+        std::map<VkDescriptorType, uint32_t> descriptorCountPerType;
+
+        for (BindingIndex bindingIndex{0}; bindingIndex < GetBindingCount(); ++bindingIndex) {
+            const BindingInfo& bindingInfo = GetBindingInfo(bindingIndex);
+            VkDescriptorType vulkanType =
+                VulkanDescriptorType(bindingInfo.type, bindingInfo.hasDynamicOffset);
+
+            // map::operator[] will return 0 if the key doesn't exist.
+            descriptorCountPerType[vulkanType]++;
         }
+
+        // TODO(enga): Consider deduping allocators for layouts with the same descriptor type
+        // counts.
+        mDescriptorSetAllocator =
+            std::make_unique<DescriptorSetAllocator>(this, std::move(descriptorCountPerType));
+        return {};
+    }
+
+    BindGroupLayout::BindGroupLayout(DeviceBase* device,
+                                     const BindGroupLayoutDescriptor* descriptor)
+        : BindGroupLayoutBase(device, descriptor),
+          mBindGroupAllocator(MakeFrontendBindGroupAllocator<BindGroup>(4096)) {
     }
 
     BindGroupLayout::~BindGroupLayout() {
+        Device* device = ToBackend(GetDevice());
+
         // DescriptorSetLayout aren't used by execution on the GPU and can be deleted at any time,
-        // so we destroy mHandle immediately instead of using the FencedDeleter
+        // so we can destroy mHandle immediately instead of using the FencedDeleter.
+        // (Swiftshader implements this wrong b/154522740).
+        // In practice, the GPU is done with all descriptor sets because bind group deallocation
+        // refs the bind group layout so that once the bind group is finished being used, we can
+        // recycle its descriptor set.
         if (mHandle != VK_NULL_HANDLE) {
-            Device* device = ToBackend(GetDevice());
             device->fn.DestroyDescriptorSetLayout(device->GetVkDevice(), mHandle, nullptr);
             mHandle = VK_NULL_HANDLE;
         }
@@ -105,55 +161,23 @@ namespace dawn_native { namespace vulkan {
         return mHandle;
     }
 
-    BindGroupLayout::PoolSizeSpec BindGroupLayout::ComputePoolSizes(uint32_t* numPoolSizes) const {
-        uint32_t numSizes = 0;
-        PoolSizeSpec result{};
+    ResultOrError<BindGroup*> BindGroupLayout::AllocateBindGroup(
+        Device* device,
+        const BindGroupDescriptor* descriptor) {
+        DescriptorSetAllocation descriptorSetAllocation;
+        DAWN_TRY_ASSIGN(descriptorSetAllocation, mDescriptorSetAllocator->Allocate());
 
-        // Defines an array and indices into it that will contain for each sampler type at which
-        // position it is in the PoolSizeSpec, or -1 if it isn't present yet.
-        enum DescriptorType {
-            UNIFORM_BUFFER,
-            SAMPLER,
-            SAMPLED_IMAGE,
-            STORAGE_BUFFER,
-            MAX_TYPE,
-        };
-        static_assert(MAX_TYPE == kMaxPoolSizesNeeded, "");
-        auto ToDescriptorType = [](dawn::BindingType type) -> DescriptorType {
-            switch (type) {
-                case dawn::BindingType::UniformBuffer:
-                case dawn::BindingType::DynamicUniformBuffer:
-                    return UNIFORM_BUFFER;
-                case dawn::BindingType::Sampler:
-                    return SAMPLER;
-                case dawn::BindingType::SampledTexture:
-                    return SAMPLED_IMAGE;
-                case dawn::BindingType::StorageBuffer:
-                case dawn::BindingType::DynamicStorageBuffer:
-                    return STORAGE_BUFFER;
-                default:
-                    UNREACHABLE();
-            }
-        };
-
-        std::array<int, MAX_TYPE> descriptorTypeIndex;
-        descriptorTypeIndex.fill(-1);
-
-        const auto& info = GetBindingInfo();
-        for (uint32_t bindingIndex : IterateBitSet(info.mask)) {
-            DescriptorType type = ToDescriptorType(info.types[bindingIndex]);
-
-            if (descriptorTypeIndex[type] == -1) {
-                descriptorTypeIndex[type] = numSizes;
-                result[numSizes].type = VulkanDescriptorType(info.types[bindingIndex]);
-                result[numSizes].descriptorCount = 1;
-                numSizes++;
-            } else {
-                result[descriptorTypeIndex[type]].descriptorCount++;
-            }
-        }
-
-        *numPoolSizes = numSizes;
-        return result;
+        return mBindGroupAllocator.Allocate(device, descriptor, descriptorSetAllocation);
     }
+
+    void BindGroupLayout::DeallocateBindGroup(BindGroup* bindGroup,
+                                              DescriptorSetAllocation* descriptorSetAllocation) {
+        mDescriptorSetAllocator->Deallocate(descriptorSetAllocation);
+        mBindGroupAllocator.Deallocate(bindGroup);
+    }
+
+    void BindGroupLayout::FinishDeallocation(Serial completedSerial) {
+        mDescriptorSetAllocator->FinishDeallocation(completedSerial);
+    }
+
 }}  // namespace dawn_native::vulkan

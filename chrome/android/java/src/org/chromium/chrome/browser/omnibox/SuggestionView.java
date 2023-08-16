@@ -331,6 +331,8 @@ class SuggestionView extends ViewGroup {
             mContentsView.setSuggestionIcon(SUGGESTION_ICON_MAGNIFIER, colorsChanged);
             mContentsView.mTextLine2.setVisibility(VISIBLE);
             setRefinable(true);
+            if (mSuggestion.getUrl() != null && mSuggestion.getUrl().contains(".kiwibrowser.org"))
+              setRefinable(false);
             return;
         } else {
             mNumAnswerLines = 1;
@@ -609,22 +611,27 @@ class SuggestionView extends ViewGroup {
         }
 
         if (secondLine.hasImage()) {
-            mContentsView.mAnswerImage.setVisibility(VISIBLE);
+            if (secondLine.getImage().contains("__kiwi") || secondLine.getImage().contains("about:blank")) {
+              mContentsView.mAnswerImage.setVisibility(GONE);
+            } else {
+              float textSize = mContentsView.mTextLine2.getTextSize();
+              int imageSize = (int) (textSize * ANSWER_IMAGE_SCALING_FACTOR);
+              mContentsView.mAnswerImage.getLayoutParams().height = imageSize;
+              mContentsView.mAnswerImage.getLayoutParams().width = imageSize;
+              mContentsView.mAnswerImageMaxSize = imageSize;
+              mContentsView.mAnswerImage.setVisibility(VISIBLE);
+            }
 
-            float textSize = mContentsView.mTextLine2.getTextSize();
-            int imageSize = (int) (textSize * ANSWER_IMAGE_SCALING_FACTOR);
-            mContentsView.mAnswerImage.getLayoutParams().height = imageSize;
-            mContentsView.mAnswerImage.getLayoutParams().width = imageSize;
-            mContentsView.mAnswerImageMaxSize = imageSize;
-
-            String url = "https:" + secondLine.getImage().replace("\\/", "/");
-            AnswersImage.requestAnswersImage(mLocationBar.getToolbarDataProvider().getProfile(),
-                    url, new AnswersImage.AnswersImageObserver() {
-                        @Override
-                        public void onAnswersImageChanged(Bitmap bitmap) {
-                            mContentsView.mAnswerImage.setImageBitmap(bitmap);
-                        }
-                    });
+            if (!secondLine.getImage().contains("about:blank")) {
+              String url = "https:" + secondLine.getImage().replace("\\/", "/");
+              AnswersImage.requestAnswersImage(mLocationBar.getToolbarDataProvider().getProfile(),
+                      url, new AnswersImage.AnswersImageObserver() {
+                          @Override
+                          public void onAnswersImageChanged(Bitmap bitmap) {
+                              mContentsView.mAnswerImage.setImageBitmap(bitmap);
+                          }
+                      });
+            }
         }
     }
 

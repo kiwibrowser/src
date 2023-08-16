@@ -200,7 +200,7 @@ public class ChromeTabbedActivity
     // Maximum delay for initial tab creation. This is for homepage and NTP, not previous tabs
     // restore. This is needed because we do not know when reading PartnerBrowserCustomizations
     // provider will be finished.
-    private static final int INITIAL_TAB_CREATION_TIMEOUT_MS = 100;
+    private static final int INITIAL_TAB_CREATION_TIMEOUT_MS = 1;
 
     /**
      * Sending an intent with this extra sets the app into single process mode.

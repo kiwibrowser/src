@@ -17,7 +17,7 @@
 
 #include "dawn_native/dawn_platform.h"
 
-#include "dawn_native/CommandAllocator.h"
+#include "dawn_native/EncodingContext.h"
 #include "dawn_native/Error.h"
 #include "dawn_native/ObjectBase.h"
 #include "dawn_native/PassResourceUsage.h"
@@ -28,17 +28,19 @@ namespace dawn_native {
 
     struct BeginRenderPassCmd;
 
-    class CommandEncoderBase : public ObjectBase {
+    class CommandEncoder final : public ObjectBase {
       public:
-        CommandEncoderBase(DeviceBase* device);
-        ~CommandEncoderBase();
+        CommandEncoder(DeviceBase* device, const CommandEncoderDescriptor* descriptor);
 
         CommandIterator AcquireCommands();
         CommandBufferResourceUsage AcquireResourceUsages();
 
+        void TrackUsedQuerySet(QuerySetBase* querySet);
+
         // Dawn API
-        ComputePassEncoderBase* BeginComputePass();
-        RenderPassEncoderBase* BeginRenderPass(const RenderPassDescriptor* info);
+        ComputePassEncoder* BeginComputePass(const ComputePassDescriptor* descriptor);
+        RenderPassEncoder* BeginRenderPass(const RenderPassDescriptor* descriptor);
+
         void CopyBufferToBuffer(BufferBase* source,
                                 uint64_t sourceOffset,
                                 BufferBase* destination,
@@ -53,43 +55,28 @@ namespace dawn_native {
         void CopyTextureToTexture(const TextureCopyView* source,
                                   const TextureCopyView* destination,
                                   const Extent3D* copySize);
-        CommandBufferBase* Finish();
 
-        // Functions to interact with the encoders
-        void HandleError(const char* message);
-        void ConsumeError(ErrorData* error);
-        bool ConsumedError(MaybeError maybeError) {
-            if (DAWN_UNLIKELY(maybeError.IsError())) {
-                ConsumeError(maybeError.AcquireError());
-                return true;
-            }
-            return false;
-        }
+        void InsertDebugMarker(const char* groupLabel);
+        void PopDebugGroup();
+        void PushDebugGroup(const char* groupLabel);
 
-        void PassEnded();
+        void ResolveQuerySet(QuerySetBase* querySet,
+                             uint32_t firstQuery,
+                             uint32_t queryCount,
+                             BufferBase* destination,
+                             uint64_t destinationOffset);
+        void WriteTimestamp(QuerySetBase* querySet, uint32_t queryIndex);
+
+        CommandBufferBase* Finish(const CommandBufferDescriptor* descriptor);
 
       private:
-        MaybeError ValidateFinish();
-        MaybeError ValidateComputePass();
-        MaybeError ValidateRenderPass(BeginRenderPassCmd* renderPass);
-        MaybeError ValidateCanRecordTopLevelCommands() const;
+        MaybeError ValidateFinish(CommandIterator* commands,
+                                  const PerPassUsages& perPassUsages) const;
 
-        enum class EncodingState : uint8_t;
-        EncodingState mEncodingState;
-
-        void MoveToIterator();
-        CommandAllocator mAllocator;
-        CommandIterator mIterator;
-        bool mWasMovedToIterator = false;
-        bool mWereCommandsAcquired = false;
-
-        bool mWereResourceUsagesAcquired = false;
-        CommandBufferResourceUsage mResourceUsages;
-
-        unsigned int mDebugGroupStackSize = 0;
-
-        bool mGotError = false;
-        std::string mErrorMessage;
+        EncodingContext mEncodingContext;
+        std::set<BufferBase*> mTopLevelBuffers;
+        std::set<TextureBase*> mTopLevelTextures;
+        std::set<QuerySetBase*> mUsedQuerySets;
     };
 
 }  // namespace dawn_native

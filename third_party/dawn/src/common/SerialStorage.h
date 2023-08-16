@@ -280,8 +280,8 @@ SerialStorage<Derived>::ConstIterator::ConstIterator(
 }
 
 template <typename Derived>
-typename SerialStorage<Derived>::ConstIterator& SerialStorage<Derived>::ConstIterator::
-operator++() {
+typename SerialStorage<Derived>::ConstIterator&
+SerialStorage<Derived>::ConstIterator::operator++() {
     const Value* vectorData = mStorageIterator->second.data();
 
     if (mSerialIterator == nullptr) {

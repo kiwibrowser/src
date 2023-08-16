@@ -14,21 +14,21 @@
 
 #include <gtest/gtest.h>
 
-#include "dawn/dawncpp.h"
+#include "dawn/webgpu_cpp.h"
 
-class Object : public dawn::ObjectBase<Object, int*> {
-    public:
-        using ObjectBase::ObjectBase;
-        using ObjectBase::operator=;
+class Object : public wgpu::ObjectBase<Object, int*> {
+  public:
+    using ObjectBase::ObjectBase;
+    using ObjectBase::operator=;
 
-        static void DawnReference(int* handle) {
-            ASSERT_LE(0, *handle);
-            *handle += 1;
-        }
-        static void DawnRelease(int* handle) {
-            ASSERT_LT(0, *handle);
-            *handle -= 1;
-        }
+    static void WGPUReference(int* handle) {
+        ASSERT_LE(0, *handle);
+        *handle += 1;
+    }
+    static void WGPURelease(int* handle) {
+        ASSERT_LT(0, *handle);
+        *handle -= 1;
+    }
 };
 
 // Test that creating an C++ object from a C object takes a ref.
@@ -194,4 +194,3 @@ TEST(ObjectBase, AssignNullptr) {
     obj = nullptr;
     ASSERT_EQ(refcount, 1);
 }
-

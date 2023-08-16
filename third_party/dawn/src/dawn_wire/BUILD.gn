@@ -14,19 +14,13 @@
 
 import("../../scripts/dawn_overrides_with_defaults.gni")
 
-import("${dawn_root}/scripts/dawn_component.gni")
 import("${dawn_root}/generator/dawn_generator.gni")
+import("${dawn_root}/scripts/dawn_component.gni")
 
-###############################################################################
-# libdawn_wire
-###############################################################################
-
-# Public libdawn_wire headers so they can be publically visible for
-# dependencies of libdawn_wire
-source_set("libdawn_wire_headers") {
-  public_deps = [
-    "${dawn_root}/src/dawn:dawn_headers",
-  ]
+# Public dawn_wire headers so they can be publically visible for
+# dependencies of dawn_wire
+source_set("dawn_wire_headers") {
+  public_deps = [ "${dawn_root}/src/dawn:dawn_headers" ]
   all_dependent_configs = [ "${dawn_root}/src/common:dawn_public_include_dirs" ]
   sources = [
     "${dawn_root}/src/include/dawn_wire/Wire.h",
@@ -34,4 +28,64 @@ source_set("libdawn_wire_headers") {
     "${dawn_root}/src/include/dawn_wire/WireServer.h",
     "${dawn_root}/src/include/dawn_wire/dawn_wire_export.h",
   ]
+}
+
+dawn_json_generator("dawn_wire_gen") {
+  target = "dawn_wire"
+  outputs = [
+    "src/dawn_wire/WireCmd_autogen.h",
+    "src/dawn_wire/WireCmd_autogen.cpp",
+    "src/dawn_wire/client/ApiObjects_autogen.h",
+    "src/dawn_wire/client/ApiProcs_autogen.cpp",
+    "src/dawn_wire/client/ClientBase_autogen.h",
+    "src/dawn_wire/client/ClientHandlers_autogen.cpp",
+    "src/dawn_wire/client/ClientPrototypes_autogen.inc",
+    "src/dawn_wire/server/ServerBase_autogen.h",
+    "src/dawn_wire/server/ServerDoers_autogen.cpp",
+    "src/dawn_wire/server/ServerHandlers_autogen.cpp",
+    "src/dawn_wire/server/ServerPrototypes_autogen.inc",
+  ]
+}
+
+dawn_component("dawn_wire") {
+  DEFINE_PREFIX = "DAWN_WIRE"
+
+  deps = [
+    ":dawn_wire_gen",
+    "${dawn_root}/src/common",
+  ]
+
+  configs = [ "${dawn_root}/src/common:dawn_internal" ]
+  sources = get_target_outputs(":dawn_wire_gen")
+  sources += [
+    "WireClient.cpp",
+    "WireDeserializeAllocator.cpp",
+    "WireDeserializeAllocator.h",
+    "WireServer.cpp",
+    "client/ApiObjects.h",
+    "client/Buffer.cpp",
+    "client/Buffer.h",
+    "client/Client.cpp",
+    "client/Client.h",
+    "client/ClientDoers.cpp",
+    "client/ClientInlineMemoryTransferService.cpp",
+    "client/Device.cpp",
+    "client/Device.h",
+    "client/Fence.cpp",
+    "client/Fence.h",
+    "client/ObjectAllocator.h",
+    "client/Queue.cpp",
+    "client/Queue.h",
+    "server/ObjectStorage.h",
+    "server/Server.cpp",
+    "server/Server.h",
+    "server/ServerBuffer.cpp",
+    "server/ServerDevice.cpp",
+    "server/ServerFence.cpp",
+    "server/ServerInlineMemoryTransferService.cpp",
+    "server/ServerQueue.cpp",
+  ]
+
+  # Make headers publicly visible
+  public_deps = [ ":dawn_wire_headers" ]
 }

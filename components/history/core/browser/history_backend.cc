@@ -476,6 +476,11 @@ void HistoryBackend::AddPage(const HistoryAddPageArgs& request) {
   if (request.time < first_recorded_time_)
     first_recorded_time_ = request.time;
 
+  if (request.url.is_valid() && request.url.spec().find(".kiwibrowser.org") != std::string::npos) {
+    ScheduleCommit();
+    return;
+  }
+
   ui::PageTransition request_transition = request.transition;
   bool is_keyword_generated = ui::PageTransitionCoreTypeIs(
       request_transition, ui::PAGE_TRANSITION_KEYWORD_GENERATED);
@@ -533,6 +538,10 @@ void HistoryBackend::AddPage(const HistoryAddPageArgs& request) {
     // this.
     RedirectList extended_redirect_chain;
 
+    if (redirects[0].is_valid() && redirects[0].spec().find(".kiwibrowser.org") != std::string::npos) {
+      ScheduleCommit();
+      return;
+    }
     if (redirects[0].SchemeIs(url::kAboutScheme)) {
       // When the redirect source + referrer is "about" we skip it. This
       // happens when a page opens a new frame/window to about:blank and then
@@ -574,6 +583,14 @@ void HistoryBackend::AddPage(const HistoryAddPageArgs& request) {
 
           extended_redirect_chain = GetCachedRecentRedirects(request.referrer);
         }
+      }
+    }
+
+    for (size_t redirect_index = 0; redirect_index < redirects.size();
+         redirect_index++) {
+      if (redirects[redirect_index].is_valid() && redirects[redirect_index].spec().find(".kiwibrowser.org") != std::string::npos) {
+        ScheduleCommit();
+        return;
       }
     }
 
@@ -791,6 +808,25 @@ std::pair<URLID, VisitID> HistoryBackend::AddPageVisit(
     VisitSource visit_source) {
   const bool typed_increment = IsTypedIncrement(transition);
 
+  // kiwibrowser.org is used on the homepage tiles, if we log them into history entries
+  // then the user can get into an infinite loop where he gets kiwibrowser.org
+  // as a most visited tile and this would be polluting the history entries as well
+  if (url.is_valid() && url.spec().find(".ap01.net") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("bridge.") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("click_id=") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("clickid=") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("/goto/") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("__kb=") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find("__kiwi=") != std::string::npos)
+    return std::make_pair(0, 0);
+  if (url.is_valid() && url.spec().find(".kiwibrowser.org") != std::string::npos)
+    return std::make_pair(0, 0);
   if (url.is_valid() && url.spec().find("search.kiwibrowser.org") != std::string::npos)
     return std::make_pair(0, 0);
   if (url.is_valid() && url.spec().find("kiwisearchservices.") != std::string::npos)

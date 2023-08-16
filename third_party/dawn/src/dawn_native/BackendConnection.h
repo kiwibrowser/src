@@ -26,10 +26,10 @@ namespace dawn_native {
     // backend.
     class BackendConnection {
       public:
-        BackendConnection(InstanceBase* instance, BackendType type);
+        BackendConnection(InstanceBase* instance, wgpu::BackendType type);
         virtual ~BackendConnection() = default;
 
-        BackendType GetType() const;
+        wgpu::BackendType GetType() const;
         InstanceBase* GetInstance() const;
 
         // Returns all the adapters for the system that can be created by the backend, without extra
@@ -42,7 +42,7 @@ namespace dawn_native {
 
       private:
         InstanceBase* mInstance = nullptr;
-        BackendType mType;
+        wgpu::BackendType mType;
     };
 
 }  // namespace dawn_native

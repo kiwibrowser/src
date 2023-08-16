@@ -15,7 +15,7 @@
 #ifndef BACKEND_VALIDATIONUTILS_H_
 #define BACKEND_VALIDATIONUTILS_H_
 
-#include "dawn/dawncpp.h"
+#include "dawn/webgpu_cpp.h"
 
 #include "dawn_native/Error.h"
 
@@ -23,7 +23,7 @@ namespace dawn_native {
 
     // Helper functions to check the value of enums and bitmasks
     {% for type in by_category["enum"] + by_category["bitmask"] %}
-        MaybeError Validate{{type.name.CamelCase()}}(dawn::{{as_cppType(type.name)}} value);
+        MaybeError Validate{{type.name.CamelCase()}}(wgpu::{{as_cppType(type.name)}} value);
     {% endfor %}
 
 } // namespace dawn_native

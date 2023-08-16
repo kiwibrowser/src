@@ -15,6 +15,7 @@
 #ifndef DAWNWIRE_SERVER_SERVERBASE_H_
 #define DAWNWIRE_SERVER_SERVERBASE_H_
 
+#include "dawn/dawn_proc_table.h"
 #include "dawn_wire/Wire.h"
 #include "dawn_wire/WireCmd_autogen.h"
 #include "dawn_wire/WireDeserializeAllocator.h"

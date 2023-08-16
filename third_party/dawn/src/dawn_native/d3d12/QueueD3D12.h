@@ -17,6 +17,7 @@
 
 #include "dawn_native/Queue.h"
 
+#include "dawn_native/d3d12/CommandRecordingContext.h"
 #include "dawn_native/d3d12/d3d12_platform.h"
 
 namespace dawn_native { namespace d3d12 {
@@ -24,14 +25,12 @@ namespace dawn_native { namespace d3d12 {
     class Device;
     class CommandBuffer;
 
-    class Queue : public QueueBase {
+    class Queue final : public QueueBase {
       public:
         Queue(Device* device);
 
       private:
-        void SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
-
-        ComPtr<ID3D12GraphicsCommandList> mCommandList;
+        MaybeError SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
     };
 
 }}  // namespace dawn_native::d3d12

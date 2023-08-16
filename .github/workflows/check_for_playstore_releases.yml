@@ -18,25 +18,27 @@ jobs:
           java-version: 13
 
       - name: Installing rclone
-        run: curl https://rclone.org/install.sh | sudo bash -s beta
+        run: |
+           curl https://rclone.org/install.sh | sudo bash
 
       - name: Creating rclone config to upload the cache
         run: |
           mkdir -p $HOME/.config/rclone/
-          echo '[sync]' > $HOME/.config/rclone/rclone.conf
-          echo 'type = s3' >> $HOME/.config/rclone/rclone.conf
-          echo 'provider = Wasabi' >> $HOME/.config/rclone/rclone.conf
-          echo 'env_auth = true' >> $HOME/.config/rclone/rclone.conf
-          echo 'endpoint = s3.wasabisys.com' >> $HOME/.config/rclone/rclone.conf
-          echo 'acl = public-read' >> $HOME/.config/rclone/rclone.conf
+          echo '[sync]' >> $HOME/.config/rclone/rclone.conf
+          echo 'type = sftp' >> $HOME/.config/rclone/rclone.conf
+          echo 'host = ${{ secrets.STORAGE_HOST }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'user = storage' >> $HOME/.config/rclone/rclone.conf
+          echo 'key_pem = ${{ secrets.STORAGE_KEY }}' >> $HOME/.config/rclone/rclone.conf
+
+      - name: Downloading apksigner.jar from storage
+        run: |
+          rclone copy --fast-list --transfers=16 sync:kiwibrowser-tools/ ./tools
+          cp -v tools/apksigner.jar .
 
       - name: Downloading check_for_playstore_releases.sh script
         run: wget https://raw.githubusercontent.com/kiwibrowser/src/master/.github/workflows/check_for_playstore_releases.sh
 
-      - name: Downloading artifacts to storage (Wasabi S3)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+      - name: Downloading artifacts from storage
         run: |
           rclone copy --fast-list --transfers=16 sync:kiwibrowser-reference/ ./reference
 
@@ -69,10 +71,14 @@ jobs:
         with:
           tag_name: ${{ github.run_id }}
           release_name: Play Store ${{ github.run_id }}
-          draft: true
+          draft: false
           prerelease: false
           body: |
-            This release is the same as the development version, except it is signed by Google instead of the developer.
+            This release is the same as one recent development version, except it is signed by Google instead of the developer.
+            
+            There will be a new release of Kiwi Browser in a couple of days called Kiwi Browser Next, this browser will be based on Chromium 93.
+            
+            If you are interested into participating into the beta, you can join https://github.com/kiwibrowser/src.next/releases
 
       - name: Uploading release asset (arm-playstore)
         uses: actions/upload-release-asset@v1
@@ -114,12 +120,14 @@ jobs:
           asset_name: Kiwi-${{ github.run_id }}-x64-playstore.apk
           asset_content_type: application/vnd.android.package-archive
 
-      - name: Uploading artifacts to storage (Wasabi S3)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.WASABI_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.WASABI_SECRET_KEY }}
+      - name: Uploading artifacts to storage
         run: |
           rclone copy --fast-list --transfers=16 ./Kiwi-arm-playstore.apk sync:kiwibrowser-reference/
           rclone copy --fast-list --transfers=16 ./Kiwi-arm64-playstore.apk sync:kiwibrowser-reference/
           rclone copy --fast-list --transfers=16 ./Kiwi-x86-playstore.apk sync:kiwibrowser-reference/
           rclone copy --fast-list --transfers=16 ./Kiwi-x64-playstore.apk sync:kiwibrowser-reference/
+
+#      - name: Send announcement on Discord
+#        if: ${{ github.repository_owner == 'kiwibrowser' }}
+#        run: |
+#          curl -H 'Content-Type: application/json' -X POST -d '{"username": "Kiwi Builder", "content": "A new version of Kiwi Browser appeared on the Play Store: https://github.com/kiwibrowser/src/releases/tag/${{ github.run_id }}"}' ${{ secrets.DISCORD_WEBHOOK }}

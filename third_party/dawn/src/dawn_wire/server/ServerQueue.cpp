@@ -17,7 +17,7 @@
 
 namespace dawn_wire { namespace server {
 
-    bool Server::DoQueueSignal(DawnQueue cSelf, DawnFence cFence, uint64_t signalValue) {
+    bool Server::DoQueueSignal(WGPUQueue cSelf, WGPUFence cFence, uint64_t signalValue) {
         if (cFence == nullptr) {
             return false;
         }
@@ -31,10 +31,44 @@ namespace dawn_wire { namespace server {
 
         FenceCompletionUserdata* userdata = new FenceCompletionUserdata;
         userdata->server = this;
-        userdata->fence = ObjectHandle{fenceId, fence->serial};
+        userdata->fence = ObjectHandle{fenceId, fence->generation};
         userdata->value = signalValue;
 
         mProcs.fenceOnCompletion(cFence, signalValue, ForwardFenceCompletedValue, userdata);
+        return true;
+    }
+
+    bool Server::DoQueueWriteBufferInternal(ObjectId queueId,
+                                            ObjectId bufferId,
+                                            uint64_t bufferOffset,
+                                            const uint8_t* data,
+                                            size_t size) {
+        // The null object isn't valid as `self` or `buffer` so we can combine the check with the
+        // check that the ID is valid.
+        auto* queue = QueueObjects().Get(queueId);
+        auto* buffer = BufferObjects().Get(bufferId);
+        if (queue == nullptr || buffer == nullptr) {
+            return false;
+        }
+
+        mProcs.queueWriteBuffer(queue->handle, buffer->handle, bufferOffset, data, size);
+        return true;
+    }
+
+    bool Server::DoQueueWriteTextureInternal(ObjectId queueId,
+                                             const WGPUTextureCopyView* destination,
+                                             const uint8_t* data,
+                                             size_t dataSize,
+                                             const WGPUTextureDataLayout* dataLayout,
+                                             const WGPUExtent3D* writeSize) {
+        // The null object isn't valid as `self` so we can combine the check with the
+        // check that the ID is valid.
+        auto* queue = QueueObjects().Get(queueId);
+        if (queue == nullptr) {
+            return false;
+        }
+
+        mProcs.queueWriteTexture(queue->handle, destination, data, dataSize, dataLayout, writeSize);
         return true;
     }
 

@@ -8,6 +8,7 @@
 
 #include "base/android/jni_string.h"
 #include "base/logging.h"
+#include "base/numerics/safe_conversions.h"
 #include "jni/BitmapHelper_jni.h"
 #include "ui/gfx/geometry/size.h"
 
@@ -77,6 +78,8 @@ ScopedJavaLocalRef<jobject> ConvertToJavaBitmap(const SkBitmap* skbitmap) {
   JavaBitmap dst_lock(jbitmap);
   void* src_pixels = skbitmap->getPixels();
   void* dst_pixels = dst_lock.pixels();
+  CHECK_GE(base::checked_cast<size_t>(dst_lock.byte_count()),
+           skbitmap->computeByteSize());
   memcpy(dst_pixels, src_pixels, skbitmap->computeByteSize());
 
   return jbitmap;

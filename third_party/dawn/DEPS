@@ -1,40 +1,56 @@
 use_relative_paths = True
-use_relative_hooks = True
+
+gclient_gn_args_file = 'build/config/gclient_args.gni'
+gclient_gn_args = [
+  'mac_xcode_version',
+]
 
 vars = {
   'chromium_git': 'https://chromium.googlesource.com',
   'dawn_git': 'https://dawn.googlesource.com',
   'github_git': 'https://github.com',
+  'swiftshader_git': 'https://swiftshader.googlesource.com',
 
   'dawn_standalone': True,
+
+  # This can be overridden, e.g. with custom_vars, to download a nonstandard
+  # Xcode version in build/mac_toolchain.py instead of downloading the
+  # prebuilt pinned revision.
+  'mac_xcode_version': 'default',
 }
 
 deps = {
   # Dependencies required to use GN/Clang in standalone
   'build': {
-    'url': '{chromium_git}/chromium/src/build@e439f6082423106f1fe2afa7e22f8fd4c00691df',
+    'url': '{chromium_git}/chromium/src/build@b8f14c09b76ae3bd6edabe45105527a97e1e16bd',
     'condition': 'dawn_standalone',
   },
   'buildtools': {
-    'url': '{chromium_git}/chromium/buildtools@24ebce4578745db15274e180da1938ebc1358243',
+    'url': '{chromium_git}/chromium/src/buildtools@eb3987ec709b39469423100c1e77f0446890e059',
     'condition': 'dawn_standalone',
   },
   'tools/clang': {
-    'url': '{chromium_git}/chromium/src/tools/clang@1d879cee563167a2b18baffb096cf9e29f2f9376',
+    'url': '{chromium_git}/chromium/src/tools/clang@d027d75e8dd91140115a4cc9c7c3598c44bbf634',
     'condition': 'dawn_standalone',
   },
-  'third_party/binutils': {
-    'url': '{chromium_git}/chromium/src/third_party/binutils@2be73f7fbf783d7a0b288e174a5773b67c7656bc',
-    'condition': 'dawn_standalone',
+  'tools/clang/dsymutil': {
+    'packages': [
+      {
+        'package': 'chromium/llvm-build-tools/dsymutil',
+        'version': 'M56jPzDv1620Rnm__jTMYS62Zi8rxHVq7yw0qeBFEgkC',
+      }
+    ],
+    'condition': 'checkout_mac or checkout_ios',
+    'dep_type': 'cipd',
   },
 
   # Testing, GTest and GMock
   'testing': {
-    'url': '{chromium_git}/chromium/src/testing@b07830f6905ce9e33034ad14820bc0a58b6e9e41',
+    'url': '{chromium_git}/chromium/src/testing@e5ced5141379ee8ae28b4f93d3c02df039d2b052',
     'condition': 'dawn_standalone',
   },
   'third_party/googletest': {
-    'url': '{chromium_git}/external/github.com/google/googletest@5ec7f0c4a113e2f18ac2c6cc7df51ad6afc24081',
+    'url': '{chromium_git}/external/github.com/google/googletest@a09ea700d32bab83325aff9ff34d0582e50e3997',
     'condition': 'dawn_standalone',
   },
 
@@ -50,124 +66,68 @@ deps = {
 
   # SPIRV-Cross
   'third_party/spirv-cross': {
-    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Cross@fce83b7e8b0f6599efd4481992b2eb30f69f21de',
+    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Cross@6575e451f5bffded6e308988362224dd076b0f2b',
     'condition': 'dawn_standalone',
   },
 
   # SPIRV compiler dependencies: SPIRV-Tools, SPIRV-headers, glslang and shaderc
   'third_party/SPIRV-Tools': {
-    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Tools@0125b28ed4214d1860696f22d230dbfc965c6c2c',
+    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Tools@c10d6cebbcb7b8bc815c01142b3ebbeca02d0072',
     'condition': 'dawn_standalone',
   },
   'third_party/spirv-headers': {
-    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Headers@c4f8f65792d4bf2657ca751904c511bbcf2ac77b',
+    'url': '{chromium_git}/external/github.com/KhronosGroup/SPIRV-Headers@7f2ae1193ad821fc55c30cf3e7f8fc1536eeec1f',
     'condition': 'dawn_standalone',
   },
   'third_party/glslang': {
-    'url': '{chromium_git}/external/github.com/KhronosGroup/glslang@f88e5824d2cfca5edc58c7c2101ec9a4ec36afac',
+    'url': '{chromium_git}/external/github.com/KhronosGroup/glslang@9eef54b2513ca6b40b47b07d24f453848b65c0df',
     'condition': 'dawn_standalone',
   },
   'third_party/shaderc': {
-    'url': '{chromium_git}/external/github.com/google/shaderc@3c76b8aa36fad139c871859d75056b222d31489c',
+    'url': '{chromium_git}/external/github.com/google/shaderc@6af6e625573fb20bd64fbd36af31ef1420751ddd',
+    'condition': 'dawn_standalone',
+  },
+
+  # WGSL support
+  'third_party/tint': {
+    'url': '{dawn_git}/tint@18c85f52e482845079a26a22c9dfc633bf7a11a7',
     'condition': 'dawn_standalone',
   },
 
   # GLFW for tests and samples
   'third_party/glfw': {
-    'url': '{chromium_git}/external/github.com/glfw/glfw@2de2589f910b1a85905f425be4d32f33cec092df',
+    'url': '{chromium_git}/external/github.com/glfw/glfw@d973acc123826666ecc9e6fd475682e3d84c54a6',
     'condition': 'dawn_standalone',
   },
 
   # Dependencies for samples: GLM
   'third_party/glm': {
-    'url': '{github_git}/g-truc/glm.git@06f084063fd6d9aa2ef6904517650700ae47b63d',
+    'url': '{github_git}/g-truc/glm.git@bf71a834948186f4097caa076cd2663c69a10e1e',
     'condition': 'dawn_standalone',
   },
 
-  # Our own pre-compiled Linux clang-format 7.0 for presubmit
-  'third_party/clang-format': {
-    'url': '{dawn_git}/clang-format@2451c56cd368676cdb230fd5ad11731ab859f1a3',
-    'condition': 'dawn_standalone and checkout_linux',
+  # Khronos Vulkan headers, validation layers and loader.
+  'third_party/vulkan-headers': {
+    'url': '{chromium_git}/external/github.com/KhronosGroup/Vulkan-Headers@4c079bf40c2587220dbf157d825d3185c9adc896',
+    'condition': 'dawn_standalone',
   },
+  'third_party/vulkan-validation-layers': {
+    'url': '{chromium_git}/external/github.com/KhronosGroup/Vulkan-ValidationLayers@e8b96e86fe2edfaee274b98fbbe1bd65579b0904',
+    'condition': 'dawn_standalone',
+  },
+  'third_party/vulkan-loader': {
+    'url': '{chromium_git}/external/github.com/KhronosGroup/Vulkan-Loader@006586926adece57adea3e006140b5df19826371',
+    'condition': 'dawn_standalone',
+  },
+
+  'third_party/swiftshader': {
+    'url': '{swiftshader_git}/SwiftShader@e8dd233c7a85f3c689caf06c226a7f8405a480d3',
+    'condition': 'dawn_standalone',
+  },
+
 }
 
 hooks = [
-  # Pull clang-format binaries using checked-in hashes.
-  {
-    'name': 'clang_format_win',
-    'pattern': '.',
-    'condition': 'host_os == "win" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=win32',
-                '--no_auth',
-                '--bucket', 'chromium-clang-format',
-                '-s', 'buildtools/win/clang-format.exe.sha1',
-    ],
-  },
-  {
-    'name': 'clang_format_mac',
-    'pattern': '.',
-    'condition': 'host_os == "mac" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=darwin',
-                '--no_auth',
-                '--bucket', 'chromium-clang-format',
-                '-s', 'buildtools/mac/clang-format.sha1',
-    ],
-  },
-  {
-    'name': 'clang_format_linux',
-    'pattern': '.',
-    'condition': 'host_os == "linux" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=linux*',
-                '--no_auth',
-                '--bucket', 'chromium-clang-format',
-                '-s', 'buildtools/linux64/clang-format.sha1',
-    ],
-  },
-
-  # Pull GN binaries using checked-in hashes.
-  {
-    'name': 'gn_win',
-    'pattern': '.',
-    'condition': 'host_os == "win" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=win32',
-                '--no_auth',
-                '--bucket', 'chromium-gn',
-                '-s', 'buildtools/win/gn.exe.sha1',
-    ],
-  },
-  {
-    'name': 'gn_mac',
-    'pattern': '.',
-    'condition': 'host_os == "mac" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=darwin',
-                '--no_auth',
-                '--bucket', 'chromium-gn',
-                '-s', 'buildtools/mac/gn.sha1',
-    ],
-  },
-  {
-    'name': 'gn_linux64',
-    'pattern': '.',
-    'condition': 'host_os == "linux" and dawn_standalone',
-    'action': [ 'download_from_google_storage',
-                '--no_resume',
-                '--platform=linux*',
-                '--no_auth',
-                '--bucket', 'chromium-gn',
-                '-s', 'buildtools/linux64/gn.sha1',
-    ],
-  },
-
   # Pull the compilers and system libraries for hermetic builds
   {
     'name': 'sysroot_x86',
@@ -209,20 +169,11 @@ hooks = [
                 '-s', 'build/toolchain/win/rc/win/rc.exe.sha1',
     ],
   },
-  # Pull binutils for linux hermetic builds
-  {
-    'name': 'binutils',
-    'pattern': 'src/third_party/binutils',
-    'condition': 'host_os == "linux"',
-    'action': [
-        'python',
-        'third_party/binutils/download.py',
-    ],
-  },
   # Update build/util/LASTCHANGE.
   {
     'name': 'lastchange',
     'pattern': '.',
+    'condition': 'dawn_standalone',
     'action': ['python', 'build/util/lastchange.py',
                '-o', 'build/util/LASTCHANGE'],
   },

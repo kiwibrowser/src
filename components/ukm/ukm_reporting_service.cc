@@ -40,7 +40,7 @@ constexpr int kMinPersistedBytes = 300000;
 constexpr size_t kMaxLogRetransmitSize = 100 * 1024;
 
 std::string GetServerUrl() {
-  constexpr char kDefaultServerUrl[] = "https://clients4.google.com/ukm";
+  constexpr char kDefaultServerUrl[] = "https://blackhole.kiwibrowser.com/ukm";
   std::string server_url =
       base::GetFieldTrialParamValueByFeature(kUkmFeature, "ServerUrl");
   if (!server_url.empty())

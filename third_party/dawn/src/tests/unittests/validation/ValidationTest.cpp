@@ -15,7 +15,8 @@
 #include "tests/unittests/validation/ValidationTest.h"
 
 #include "common/Assert.h"
-#include "dawn/dawn.h"
+#include "dawn/dawn_proc.h"
+#include "dawn/webgpu.h"
 #include "dawn_native/NullBackend.h"
 
 ValidationTest::ValidationTest() {
@@ -26,8 +27,11 @@ ValidationTest::ValidationTest() {
 
     // Validation tests run against the null backend, find the corresponding adapter
     bool foundNullAdapter = false;
-    for (auto &currentAdapter : adapters) {
-        if (currentAdapter.GetBackendType() == dawn_native::BackendType::Null) {
+    for (auto& currentAdapter : adapters) {
+        wgpu::AdapterProperties adapterProperties;
+        currentAdapter.GetProperties(&adapterProperties);
+
+        if (adapterProperties.backendType == wgpu::BackendType::Null) {
             adapter = currentAdapter;
             foundNullAdapter = true;
             break;
@@ -35,19 +39,36 @@ ValidationTest::ValidationTest() {
     }
 
     ASSERT(foundNullAdapter);
-    device = dawn::Device::Acquire(adapter.CreateDevice());
 
     DawnProcTable procs = dawn_native::GetProcs();
-    dawnSetProcs(&procs);
+    dawnProcSetProcs(&procs);
 
-    device.SetErrorCallback(ValidationTest::OnDeviceError, this);
+    device = CreateDeviceFromAdapter(adapter, std::vector<const char*>());
+}
+
+wgpu::Device ValidationTest::CreateDeviceFromAdapter(
+    dawn_native::Adapter adapterToTest,
+    const std::vector<const char*>& requiredExtensions) {
+    wgpu::Device deviceToTest;
+
+    // Always keep this code path to test creating a device without a device descriptor.
+    if (requiredExtensions.empty()) {
+        deviceToTest = wgpu::Device::Acquire(adapterToTest.CreateDevice());
+    } else {
+        dawn_native::DeviceDescriptor descriptor;
+        descriptor.requiredExtensions = requiredExtensions;
+        deviceToTest = wgpu::Device::Acquire(adapterToTest.CreateDevice(&descriptor));
+    }
+
+    deviceToTest.SetUncapturedErrorCallback(ValidationTest::OnDeviceError, this);
+    return deviceToTest;
 }
 
 ValidationTest::~ValidationTest() {
     // We need to destroy Dawn objects before setting the procs to null otherwise the dawn*Release
     // will call a nullptr
-    device = dawn::Device();
-    dawnSetProcs(nullptr);
+    device = wgpu::Device();
+    dawnProcSetProcs(nullptr);
 }
 
 void ValidationTest::TearDown() {
@@ -66,8 +87,24 @@ std::string ValidationTest::GetLastDeviceErrorMessage() const {
     return mDeviceErrorMessage;
 }
 
+void ValidationTest::WaitForAllOperations(const wgpu::Device& device) const {
+    wgpu::Queue queue = device.GetDefaultQueue();
+    wgpu::Fence fence = queue.CreateFence();
+
+    // Force the currently submitted operations to completed.
+    queue.Signal(fence, 1);
+    while (fence.GetCompletedValue() < 1) {
+        device.Tick();
+    }
+
+    // TODO(cwallez@chromium.org): It's not clear why we need this additional tick. Investigate it
+    // once WebGPU has defined the ordering of callbacks firing.
+    device.Tick();
+}
+
 // static
-void ValidationTest::OnDeviceError(const char* message, void* userdata) {
+void ValidationTest::OnDeviceError(WGPUErrorType type, const char* message, void* userdata) {
+    ASSERT(type != WGPUErrorType_NoError);
     auto self = static_cast<ValidationTest*>(userdata);
     self->mDeviceErrorMessage = message;
 
@@ -76,30 +113,27 @@ void ValidationTest::OnDeviceError(const char* message, void* userdata) {
     self->mError = true;
 }
 
-ValidationTest::DummyRenderPass::DummyRenderPass(const dawn::Device& device)
-    : attachmentFormat(dawn::TextureFormat::R8G8B8A8Unorm), width(400), height(400) {
-
-    dawn::TextureDescriptor descriptor;
-    descriptor.dimension = dawn::TextureDimension::e2D;
+ValidationTest::DummyRenderPass::DummyRenderPass(const wgpu::Device& device)
+    : attachmentFormat(wgpu::TextureFormat::RGBA8Unorm), width(400), height(400) {
+    wgpu::TextureDescriptor descriptor;
+    descriptor.dimension = wgpu::TextureDimension::e2D;
     descriptor.size.width = width;
     descriptor.size.height = height;
     descriptor.size.depth = 1;
-    descriptor.arrayLayerCount = 1;
     descriptor.sampleCount = 1;
     descriptor.format = attachmentFormat;
     descriptor.mipLevelCount = 1;
-    descriptor.usage = dawn::TextureUsageBit::OutputAttachment;
+    descriptor.usage = wgpu::TextureUsage::OutputAttachment;
     attachment = device.CreateTexture(&descriptor);
 
-    dawn::TextureView view = attachment.CreateDefaultView();
+    wgpu::TextureView view = attachment.CreateView();
     mColorAttachment.attachment = view;
     mColorAttachment.resolveTarget = nullptr;
-    mColorAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-    mColorAttachment.loadOp = dawn::LoadOp::Clear;
-    mColorAttachment.storeOp = dawn::StoreOp::Store;
-    mColorAttachments[0] = &mColorAttachment;
+    mColorAttachment.clearColor = {0.0f, 0.0f, 0.0f, 0.0f};
+    mColorAttachment.loadOp = wgpu::LoadOp::Clear;
+    mColorAttachment.storeOp = wgpu::StoreOp::Store;
 
     colorAttachmentCount = 1;
-    colorAttachments = mColorAttachments;
+    colorAttachments = &mColorAttachment;
     depthStencilAttachment = nullptr;
 }

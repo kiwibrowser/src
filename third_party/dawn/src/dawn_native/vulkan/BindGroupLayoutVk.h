@@ -17,27 +17,56 @@
 
 #include "dawn_native/BindGroupLayout.h"
 
+#include "common/Serial.h"
+#include "common/SlabAllocator.h"
 #include "common/vulkan_platform.h"
+
+#include <vector>
 
 namespace dawn_native { namespace vulkan {
 
+    class BindGroup;
+    struct DescriptorSetAllocation;
+    class DescriptorSetAllocator;
     class Device;
 
-    VkDescriptorType VulkanDescriptorType(dawn::BindingType type);
+    VkDescriptorType VulkanDescriptorType(wgpu::BindingType type, bool isDynamic);
 
-    class BindGroupLayout : public BindGroupLayoutBase {
+    // In Vulkan descriptor pools have to be sized to an exact number of descriptors. This means
+    // it's hard to have something where we can mix different types of descriptor sets because
+    // we don't know if their vector of number of descriptors will be similar.
+    //
+    // That's why that in addition to containing the VkDescriptorSetLayout to create
+    // VkDescriptorSets for its bindgroups, the layout also acts as an allocator for the descriptor
+    // sets.
+    //
+    // The allocations is done with one pool per descriptor set, which is inefficient, but at least
+    // the pools are reused when no longer used. Minimizing the number of descriptor pool allocation
+    // is important because creating them can incur GPU memory allocation which is usually an
+    // expensive syscall.
+    class BindGroupLayout final : public BindGroupLayoutBase {
       public:
-        BindGroupLayout(Device* device, const BindGroupLayoutDescriptor* descriptor);
-        ~BindGroupLayout();
+        static ResultOrError<BindGroupLayout*> Create(Device* device,
+                                                      const BindGroupLayoutDescriptor* descriptor);
+
+        BindGroupLayout(DeviceBase* device, const BindGroupLayoutDescriptor* descriptor);
 
         VkDescriptorSetLayout GetHandle() const;
 
-        static constexpr size_t kMaxPoolSizesNeeded = 4;
-        using PoolSizeSpec = std::array<VkDescriptorPoolSize, kMaxPoolSizesNeeded>;
-        PoolSizeSpec ComputePoolSizes(uint32_t* numPoolSizes) const;
+        ResultOrError<BindGroup*> AllocateBindGroup(Device* device,
+                                                    const BindGroupDescriptor* descriptor);
+        void DeallocateBindGroup(BindGroup* bindGroup,
+                                 DescriptorSetAllocation* descriptorSetAllocation);
+        void FinishDeallocation(Serial completedSerial);
 
       private:
+        ~BindGroupLayout() override;
+        MaybeError Initialize();
+
         VkDescriptorSetLayout mHandle = VK_NULL_HANDLE;
+
+        SlabAllocator<BindGroup> mBindGroupAllocator;
+        std::unique_ptr<DescriptorSetAllocator> mDescriptorSetAllocator;
     };
 
 }}  // namespace dawn_native::vulkan

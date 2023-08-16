@@ -14,122 +14,193 @@
 
 #include "dawn_native/ProgrammablePassEncoder.h"
 
+#include "common/BitSetIterator.h"
+#include "common/ityp_array.h"
 #include "dawn_native/BindGroup.h"
+#include "dawn_native/Buffer.h"
 #include "dawn_native/CommandBuffer.h"
 #include "dawn_native/Commands.h"
 #include "dawn_native/Device.h"
 #include "dawn_native/ValidationUtils_autogen.h"
 
-#include <string.h>
+#include <cstring>
 
 namespace dawn_native {
 
-    ProgrammablePassEncoder::ProgrammablePassEncoder(DeviceBase* device,
-                                                     CommandEncoderBase* topLevelEncoder,
-                                                     CommandAllocator* allocator)
-        : ObjectBase(device), mTopLevelEncoder(topLevelEncoder), mAllocator(allocator) {
-        DAWN_ASSERT(allocator != nullptr);
-    }
+    namespace {
+        void TrackBindGroupResourceUsage(PassResourceUsageTracker* usageTracker,
+                                         BindGroupBase* group) {
+            for (BindingIndex bindingIndex{0}; bindingIndex < group->GetLayout()->GetBindingCount();
+                 ++bindingIndex) {
+                wgpu::BindingType type = group->GetLayout()->GetBindingInfo(bindingIndex).type;
 
-    ProgrammablePassEncoder::ProgrammablePassEncoder(DeviceBase* device,
-                                                     CommandEncoderBase* topLevelEncoder,
-                                                     ErrorTag errorTag)
-        : ObjectBase(device, errorTag), mTopLevelEncoder(topLevelEncoder), mAllocator(nullptr) {
-    }
+                switch (type) {
+                    case wgpu::BindingType::UniformBuffer: {
+                        BufferBase* buffer = group->GetBindingAsBufferBinding(bindingIndex).buffer;
+                        usageTracker->BufferUsedAs(buffer, wgpu::BufferUsage::Uniform);
+                        break;
+                    }
 
-    void ProgrammablePassEncoder::EndPass() {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
+                    case wgpu::BindingType::StorageBuffer: {
+                        BufferBase* buffer = group->GetBindingAsBufferBinding(bindingIndex).buffer;
+                        usageTracker->BufferUsedAs(buffer, wgpu::BufferUsage::Storage);
+                        break;
+                    }
+
+                    case wgpu::BindingType::SampledTexture: {
+                        TextureViewBase* view = group->GetBindingAsTextureView(bindingIndex);
+                        usageTracker->TextureViewUsedAs(view, wgpu::TextureUsage::Sampled);
+                        break;
+                    }
+
+                    case wgpu::BindingType::ReadonlyStorageBuffer: {
+                        BufferBase* buffer = group->GetBindingAsBufferBinding(bindingIndex).buffer;
+                        usageTracker->BufferUsedAs(buffer, kReadOnlyStorageBuffer);
+                        break;
+                    }
+
+                    case wgpu::BindingType::Sampler:
+                    case wgpu::BindingType::ComparisonSampler:
+                        break;
+
+                    case wgpu::BindingType::ReadonlyStorageTexture: {
+                        TextureViewBase* view = group->GetBindingAsTextureView(bindingIndex);
+                        usageTracker->TextureViewUsedAs(view, kReadonlyStorageTexture);
+                        break;
+                    }
+
+                    case wgpu::BindingType::WriteonlyStorageTexture: {
+                        TextureViewBase* view = group->GetBindingAsTextureView(bindingIndex);
+                        usageTracker->TextureViewUsedAs(view, wgpu::TextureUsage::Storage);
+                        break;
+                    }
+
+                    case wgpu::BindingType::StorageTexture:
+                        UNREACHABLE();
+                        break;
+                }
+            }
         }
+    }  // namespace
 
-        mTopLevelEncoder->PassEnded();
-        mAllocator = nullptr;
+    ProgrammablePassEncoder::ProgrammablePassEncoder(DeviceBase* device,
+                                                     EncodingContext* encodingContext,
+                                                     PassType passType)
+        : ObjectBase(device), mEncodingContext(encodingContext), mUsageTracker(passType) {
+    }
+
+    ProgrammablePassEncoder::ProgrammablePassEncoder(DeviceBase* device,
+                                                     EncodingContext* encodingContext,
+                                                     ErrorTag errorTag,
+                                                     PassType passType)
+        : ObjectBase(device, errorTag), mEncodingContext(encodingContext), mUsageTracker(passType) {
     }
 
     void ProgrammablePassEncoder::InsertDebugMarker(const char* groupLabel) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            InsertDebugMarkerCmd* cmd =
+                allocator->Allocate<InsertDebugMarkerCmd>(Command::InsertDebugMarker);
+            cmd->length = strlen(groupLabel);
 
-        InsertDebugMarkerCmd* cmd =
-            mAllocator->Allocate<InsertDebugMarkerCmd>(Command::InsertDebugMarker);
-        cmd->length = strlen(groupLabel);
+            char* label = allocator->AllocateData<char>(cmd->length + 1);
+            memcpy(label, groupLabel, cmd->length + 1);
 
-        char* label = mAllocator->AllocateData<char>(cmd->length + 1);
-        memcpy(label, groupLabel, cmd->length + 1);
+            return {};
+        });
     }
 
     void ProgrammablePassEncoder::PopDebugGroup() {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            allocator->Allocate<PopDebugGroupCmd>(Command::PopDebugGroup);
 
-        mAllocator->Allocate<PopDebugGroupCmd>(Command::PopDebugGroup);
+            return {};
+        });
     }
 
     void ProgrammablePassEncoder::PushDebugGroup(const char* groupLabel) {
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands())) {
-            return;
-        }
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            PushDebugGroupCmd* cmd =
+                allocator->Allocate<PushDebugGroupCmd>(Command::PushDebugGroup);
+            cmd->length = strlen(groupLabel);
 
-        PushDebugGroupCmd* cmd = mAllocator->Allocate<PushDebugGroupCmd>(Command::PushDebugGroup);
-        cmd->length = strlen(groupLabel);
+            char* label = allocator->AllocateData<char>(cmd->length + 1);
+            memcpy(label, groupLabel, cmd->length + 1);
 
-        char* label = mAllocator->AllocateData<char>(cmd->length + 1);
-        memcpy(label, groupLabel, cmd->length + 1);
+            return {};
+        });
     }
 
-    void ProgrammablePassEncoder::SetBindGroup(uint32_t groupIndex,
+    void ProgrammablePassEncoder::SetBindGroup(uint32_t groupIndexIn,
                                                BindGroupBase* group,
-                                               uint32_t dynamicOffsetCount,
-                                               const uint64_t* dynamicOffsets) {
-        const BindGroupLayoutBase* layout = group->GetLayout();
+                                               uint32_t dynamicOffsetCountIn,
+                                               const uint32_t* dynamicOffsetsIn) {
+        mEncodingContext->TryEncode(this, [&](CommandAllocator* allocator) -> MaybeError {
+            BindGroupIndex groupIndex(groupIndexIn);
 
-        if (mTopLevelEncoder->ConsumedError(ValidateCanRecordCommands()) ||
-            mTopLevelEncoder->ConsumedError(GetDevice()->ValidateObject(group))) {
-            return;
-        }
+            if (GetDevice()->IsValidationEnabled()) {
+                DAWN_TRY(GetDevice()->ValidateObject(group));
 
-        if (groupIndex >= kMaxBindGroups) {
-            mTopLevelEncoder->HandleError("Setting bind group over the max");
-            return;
-        }
+                if (groupIndex >= kMaxBindGroupsTyped) {
+                    return DAWN_VALIDATION_ERROR("Setting bind group over the max");
+                }
 
-        // Dynamic offsets count must match the number required by the layout perfectly.
-        if (layout->GetDynamicBufferCount() != dynamicOffsetCount) {
-            mTopLevelEncoder->HandleError("dynamicOffset count mismatch");
-        }
+                ityp::span<BindingIndex, const uint32_t> dynamicOffsets(
+                    dynamicOffsetsIn, BindingIndex(dynamicOffsetCountIn));
 
-        for (uint32_t i = 0; i < dynamicOffsetCount; ++i) {
-            if (dynamicOffsets[i] % kMinDynamicBufferOffsetAlignment != 0) {
-                mTopLevelEncoder->HandleError("Dynamic Buffer Offset need to be aligned");
-                return;
+                // Dynamic offsets count must match the number required by the layout perfectly.
+                const BindGroupLayoutBase* layout = group->GetLayout();
+                if (layout->GetDynamicBufferCount() != dynamicOffsets.size()) {
+                    return DAWN_VALIDATION_ERROR("dynamicOffset count mismatch");
+                }
+
+                for (BindingIndex i{0}; i < dynamicOffsets.size(); ++i) {
+                    const BindingInfo& bindingInfo = layout->GetBindingInfo(i);
+
+                    // BGL creation sorts bindings such that the dynamic buffer bindings are first.
+                    // ASSERT that this true.
+                    ASSERT(bindingInfo.hasDynamicOffset);
+                    switch (bindingInfo.type) {
+                        case wgpu::BindingType::UniformBuffer:
+                        case wgpu::BindingType::StorageBuffer:
+                        case wgpu::BindingType::ReadonlyStorageBuffer:
+                            break;
+                        default:
+                            UNREACHABLE();
+                            break;
+                    }
+
+                    if (dynamicOffsets[i] % kMinDynamicBufferOffsetAlignment != 0) {
+                        return DAWN_VALIDATION_ERROR("Dynamic Buffer Offset need to be aligned");
+                    }
+
+                    BufferBinding bufferBinding = group->GetBindingAsBufferBinding(i);
+
+                    // During BindGroup creation, validation ensures binding offset + binding size
+                    // <= buffer size.
+                    ASSERT(bufferBinding.buffer->GetSize() >= bufferBinding.size);
+                    ASSERT(bufferBinding.buffer->GetSize() - bufferBinding.size >=
+                           bufferBinding.offset);
+
+                    if ((dynamicOffsets[i] > bufferBinding.buffer->GetSize() -
+                                                 bufferBinding.offset - bufferBinding.size)) {
+                        return DAWN_VALIDATION_ERROR("dynamic offset out of bounds");
+                    }
+                }
             }
 
-            BufferBinding bufferBinding = group->GetBindingAsBufferBinding(i);
-
-            if (dynamicOffsets[i] >= bufferBinding.size - bufferBinding.offset) {
-                mTopLevelEncoder->HandleError("dynamic offset out of bounds");
-                return;
+            SetBindGroupCmd* cmd = allocator->Allocate<SetBindGroupCmd>(Command::SetBindGroup);
+            cmd->index = groupIndex;
+            cmd->group = group;
+            cmd->dynamicOffsetCount = dynamicOffsetCountIn;
+            if (dynamicOffsetCountIn > 0) {
+                uint32_t* offsets = allocator->AllocateData<uint32_t>(cmd->dynamicOffsetCount);
+                memcpy(offsets, dynamicOffsetsIn, dynamicOffsetCountIn * sizeof(uint32_t));
             }
-        }
 
-        SetBindGroupCmd* cmd = mAllocator->Allocate<SetBindGroupCmd>(Command::SetBindGroup);
-        cmd->index = groupIndex;
-        cmd->group = group;
-        cmd->dynamicOffsetCount = dynamicOffsetCount;
-        if (dynamicOffsetCount > 0) {
-            uint64_t* offsets = mAllocator->AllocateData<uint64_t>(cmd->dynamicOffsetCount);
-            memcpy(offsets, dynamicOffsets, dynamicOffsetCount * sizeof(uint64_t));
-        }
-    }
+            TrackBindGroupResourceUsage(&mUsageTracker, group);
 
-    MaybeError ProgrammablePassEncoder::ValidateCanRecordCommands() const {
-        if (mAllocator == nullptr) {
-            return DAWN_VALIDATION_ERROR("Recording in an error or already ended pass encoder");
-        }
-
-        return nullptr;
+            return {};
+        });
     }
 
 }  // namespace dawn_native

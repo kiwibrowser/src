@@ -18,19 +18,24 @@
 #include "dawn_native/ComputePipeline.h"
 
 #include "common/vulkan_platform.h"
+#include "dawn_native/Error.h"
 
 namespace dawn_native { namespace vulkan {
 
     class Device;
 
-    class ComputePipeline : public ComputePipelineBase {
+    class ComputePipeline final : public ComputePipelineBase {
       public:
-        ComputePipeline(Device* device, const ComputePipelineDescriptor* descriptor);
-        ~ComputePipeline();
+        static ResultOrError<ComputePipeline*> Create(Device* device,
+                                                      const ComputePipelineDescriptor* descriptor);
 
         VkPipeline GetHandle() const;
 
       private:
+        ~ComputePipeline() override;
+        using ComputePipelineBase::ComputePipelineBase;
+        MaybeError Initialize(const ComputePipelineDescriptor* descriptor);
+
         VkPipeline mHandle = VK_NULL_HANDLE;
     };
 

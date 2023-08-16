@@ -20,23 +20,23 @@ using namespace testing;
 
 class MockFenceOnCompletionCallback {
   public:
-    MOCK_METHOD2(Call, void(DawnFenceCompletionStatus status, void* userdata));
+    MOCK_METHOD(void, Call, (WGPUFenceCompletionStatus status, void* userdata));
 };
 
 struct FenceOnCompletionExpectation {
-    dawn::Fence fence;
+    wgpu::Fence fence;
     uint64_t value;
-    DawnFenceCompletionStatus status;
+    WGPUFenceCompletionStatus status;
 };
 
 static std::unique_ptr<MockFenceOnCompletionCallback> mockFenceOnCompletionCallback;
-static void ToMockFenceOnCompletionCallback(DawnFenceCompletionStatus status, void* userdata) {
+static void ToMockFenceOnCompletionCallback(WGPUFenceCompletionStatus status, void* userdata) {
     mockFenceOnCompletionCallback->Call(status, userdata);
 }
 
 class FenceValidationTest : public ValidationTest {
   protected:
-    void TestOnCompletion(dawn::Fence fence, uint64_t value, DawnFenceCompletionStatus status) {
+    void TestOnCompletion(wgpu::Fence fence, uint64_t value, WGPUFenceCompletionStatus status) {
         FenceOnCompletionExpectation* expectation = new FenceOnCompletionExpectation;
         expectation->fence = fence;
         expectation->value = value;
@@ -50,14 +50,14 @@ class FenceValidationTest : public ValidationTest {
         device.Tick();
     }
 
-    dawn::Queue queue;
+    wgpu::Queue queue;
 
   private:
     void SetUp() override {
         ValidationTest::SetUp();
 
         mockFenceOnCompletionCallback = std::make_unique<MockFenceOnCompletionCallback>();
-        queue = device.CreateQueue();
+        queue = device.GetDefaultQueue();
     }
 
     void TearDown() override {
@@ -72,18 +72,24 @@ class FenceValidationTest : public ValidationTest {
 TEST_F(FenceValidationTest, CreationSuccess) {
     // Success
     {
-        dawn::FenceDescriptor descriptor;
+        wgpu::FenceDescriptor descriptor;
         descriptor.initialValue = 0;
         queue.CreateFence(&descriptor);
     }
 }
 
+// Creation succeeds if no descriptor is provided
+TEST_F(FenceValidationTest, DefaultDescriptor) {
+    wgpu::Fence fence = queue.CreateFence();
+    EXPECT_EQ(fence.GetCompletedValue(), 0u);
+}
+
 TEST_F(FenceValidationTest, GetCompletedValue) {
     // Starts at initial value
     {
-        dawn::FenceDescriptor descriptor;
+        wgpu::FenceDescriptor descriptor;
         descriptor.initialValue = 1;
-        dawn::Fence fence = queue.CreateFence(&descriptor);
+        wgpu::Fence fence = queue.CreateFence(&descriptor);
         EXPECT_EQ(fence.GetCompletedValue(), 1u);
     }
 }
@@ -91,35 +97,33 @@ TEST_F(FenceValidationTest, GetCompletedValue) {
 // Test that OnCompletion handlers are called immediately for
 // already completed fence values
 TEST_F(FenceValidationTest, OnCompletionImmediate) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 0))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 0))
         .Times(1);
     fence.OnCompletion(0u, ToMockFenceOnCompletionCallback, this + 0);
 
-    EXPECT_CALL(*mockFenceOnCompletionCallback,
-                Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, this + 1))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, this + 1))
         .Times(1);
     fence.OnCompletion(1u, ToMockFenceOnCompletionCallback, this + 1);
 }
 
 // Test setting OnCompletion handlers for values > signaled value
 TEST_F(FenceValidationTest, OnCompletionLargerThanSignaled) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     // Cannot signal for values > signaled value
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_ERROR, nullptr))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Error, nullptr))
         .Times(1);
     ASSERT_DEVICE_ERROR(fence.OnCompletion(2u, ToMockFenceOnCompletionCallback, nullptr));
 
     // Can set handler after signaling
     queue.Signal(fence, 2);
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, nullptr))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, nullptr))
         .Times(1);
     fence.OnCompletion(2u, ToMockFenceOnCompletionCallback, nullptr);
 
@@ -127,14 +131,14 @@ TEST_F(FenceValidationTest, OnCompletionLargerThanSignaled) {
 }
 
 TEST_F(FenceValidationTest, GetCompletedValueInsideCallback) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     queue.Signal(fence, 3);
     fence.OnCompletion(2u, ToMockFenceOnCompletionCallback, nullptr);
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, nullptr))
-        .WillOnce(Invoke([&](DawnFenceCompletionStatus status, void* userdata) {
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, nullptr))
+        .WillOnce(Invoke([&](WGPUFenceCompletionStatus status, void* userdata) {
             EXPECT_EQ(fence.GetCompletedValue(), 3u);
         }));
 
@@ -142,13 +146,13 @@ TEST_F(FenceValidationTest, GetCompletedValueInsideCallback) {
 }
 
 TEST_F(FenceValidationTest, GetCompletedValueAfterCallback) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     queue.Signal(fence, 2);
     fence.OnCompletion(2u, ToMockFenceOnCompletionCallback, nullptr);
-    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(DAWN_FENCE_COMPLETION_STATUS_SUCCESS, nullptr))
+    EXPECT_CALL(*mockFenceOnCompletionCallback, Call(WGPUFenceCompletionStatus_Success, nullptr))
         .Times(1);
 
     Flush();
@@ -156,9 +160,9 @@ TEST_F(FenceValidationTest, GetCompletedValueAfterCallback) {
 }
 
 TEST_F(FenceValidationTest, SignalError) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     // value < fence signaled value
     ASSERT_DEVICE_ERROR(queue.Signal(fence, 0));
@@ -168,9 +172,9 @@ TEST_F(FenceValidationTest, SignalError) {
 }
 
 TEST_F(FenceValidationTest, SignalSuccess) {
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     // Success
     queue.Signal(fence, 2);
@@ -184,23 +188,25 @@ TEST_F(FenceValidationTest, SignalSuccess) {
 }
 
 // Test it is invalid to signal a fence on a different queue than it was created on
-TEST_F(FenceValidationTest, SignalWrongQueue) {
-    dawn::Queue queue2 = device.CreateQueue();
+// DISABLED until we have support for multiple queues
+TEST_F(FenceValidationTest, DISABLED_SignalWrongQueue) {
+    wgpu::Queue queue2 = device.GetDefaultQueue();
 
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     ASSERT_DEVICE_ERROR(queue2.Signal(fence, 2));
 }
 
 // Test that signaling a fence on a wrong queue does not update fence signaled value
-TEST_F(FenceValidationTest, SignalWrongQueueDoesNotUpdateValue) {
-    dawn::Queue queue2 = device.CreateQueue();
+// DISABLED until we have support for multiple queues
+TEST_F(FenceValidationTest, DISABLED_SignalWrongQueueDoesNotUpdateValue) {
+    wgpu::Queue queue2 = device.GetDefaultQueue();
 
-    dawn::FenceDescriptor descriptor;
+    wgpu::FenceDescriptor descriptor;
     descriptor.initialValue = 1;
-    dawn::Fence fence = queue.CreateFence(&descriptor);
+    wgpu::Fence fence = queue.CreateFence(&descriptor);
 
     ASSERT_DEVICE_ERROR(queue2.Signal(fence, 2));
 

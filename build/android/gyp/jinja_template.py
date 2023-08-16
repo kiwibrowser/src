@@ -106,7 +106,9 @@ def _ParseVariables(variables_arg, error_func):
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--inputs', required=True,
-                      help='The template files to process.')
+                      help='GN-list of template files to process.')
+  parser.add_argument('--includes', default='',
+                      help="GN-list of files that get {% include %}'ed.")
   parser.add_argument('--output', help='The output file to generate. Valid '
                       'only if there is a single input.')
   parser.add_argument('--outputs-zip', help='A zip file for the processed '
@@ -126,6 +128,7 @@ def main():
   options = parser.parse_args()
 
   inputs = build_utils.ParseGnList(options.inputs)
+  includes = build_utils.ParseGnList(options.includes)
 
   if (options.output is None) == (options.outputs_zip is None):
     parser.error('Exactly one of --output and --output-zip must be given')
@@ -145,8 +148,15 @@ def main():
 
   if options.depfile:
     output = options.output or options.outputs_zip
-    deps = processor.GetLoadedTemplates()
-    build_utils.WriteDepfile(options.depfile, output, deps)
+    all_inputs = set(processor.GetLoadedTemplates())
+    all_inputs.difference_update(inputs)
+    all_inputs.difference_update(includes)
+    if all_inputs:
+      # TODO(agrieve): Change this to an exception once downstream violations
+      #     are fixed. https://crbug.com/843562
+      print ('Found files not listed via --includes:\n' +
+             '\n'.join(sorted(all_inputs)))
+    build_utils.WriteDepfile(options.depfile, output)
 
 
 if __name__ == '__main__':

@@ -48,6 +48,17 @@ public final class StrictModeContext implements Closeable {
     }
 
     /**
+     * Convenience method for disabling all thread-level StrictMode checks with try-with-resources.
+     * Includes everything listed here:
+     *     https://developer.android.com/reference/android/os/StrictMode.ThreadPolicy.Builder.html
+     */
+    public static StrictModeContext allowAllThreadPolicies() {
+        StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
+        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.LAX);
+        return new StrictModeContext(oldPolicy);
+    }
+    
+    /**
      * Convenience method for disabling StrictMode for disk-writes with try-with-resources.
      */
     public static StrictModeContext allowDiskWrites() {

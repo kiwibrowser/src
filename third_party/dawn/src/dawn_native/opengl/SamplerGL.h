@@ -17,20 +17,29 @@
 
 #include "dawn_native/Sampler.h"
 
-#include "glad/glad.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
 
     class Device;
 
-    class Sampler : public SamplerBase {
+    class Sampler final : public SamplerBase {
       public:
         Sampler(Device* device, const SamplerDescriptor* descriptor);
 
-        GLuint GetHandle() const;
+        GLuint GetFilteringHandle() const;
+        GLuint GetNonFilteringHandle() const;
 
       private:
-        GLuint mHandle;
+        ~Sampler() override;
+
+        void SetupGLSampler(GLuint sampler, const SamplerDescriptor* descriptor, bool forceNearest);
+
+        GLuint mFilteringHandle;
+
+        // This is a sampler equivalent to mFilteringHandle except that it uses NEAREST filtering
+        // for everything, which is important to preserve texture completeness for u/int textures.
+        GLuint mNonFilteringHandle;
     };
 
 }}  // namespace dawn_native::opengl

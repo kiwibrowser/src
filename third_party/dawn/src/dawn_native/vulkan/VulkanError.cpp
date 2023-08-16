@@ -18,8 +18,12 @@
 
 namespace dawn_native { namespace vulkan {
 
-    const char* VkResultAsString(VkResult result) {
-        switch (result) {
+    const char* VkResultAsString(::VkResult result) {
+        // Convert to a int32_t to silence and MSVC warning that the fake errors don't appear in
+        // the original VkResult enum.
+        int32_t code = static_cast<int32_t>(result);
+
+        switch (code) {
             case VK_SUCCESS:
                 return "VK_SUCCESS";
             case VK_NOT_READY:
@@ -56,18 +60,44 @@ namespace dawn_native { namespace vulkan {
                 return "VK_ERROR_FORMAT_NOT_SUPPORTED";
             case VK_ERROR_FRAGMENTED_POOL:
                 return "VK_ERROR_FRAGMENTED_POOL";
+            case VK_FAKE_DEVICE_OOM_FOR_TESTING:
+                return "VK_FAKE_DEVICE_OOM_FOR_TESTING";
+            case VK_FAKE_ERROR_FOR_TESTING:
+                return "VK_FAKE_ERROR_FOR_TESTING";
             default:
                 return "<Unknown VkResult>";
         }
     }
 
-    MaybeError CheckVkSuccess(VkResult result, const char* context) {
+    MaybeError CheckVkSuccessImpl(VkResult result, const char* context) {
         if (DAWN_LIKELY(result == VK_SUCCESS)) {
             return {};
         }
 
         std::string message = std::string(context) + " failed with " + VkResultAsString(result);
-        return DAWN_CONTEXT_LOST_ERROR(message);
+
+        if (result == VK_ERROR_DEVICE_LOST) {
+            return DAWN_DEVICE_LOST_ERROR(message);
+        } else {
+            return DAWN_INTERNAL_ERROR(message);
+        }
+    }
+
+    MaybeError CheckVkOOMThenSuccessImpl(VkResult result, const char* context) {
+        if (DAWN_LIKELY(result == VK_SUCCESS)) {
+            return {};
+        }
+
+        std::string message = std::string(context) + " failed with " + VkResultAsString(result);
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY ||
+            result == VK_FAKE_DEVICE_OOM_FOR_TESTING) {
+            return DAWN_OUT_OF_MEMORY_ERROR(message);
+        } else if (result == VK_ERROR_DEVICE_LOST) {
+            return DAWN_DEVICE_LOST_ERROR(message);
+        } else {
+            return DAWN_INTERNAL_ERROR(message);
+        }
     }
 
 }}  // namespace dawn_native::vulkan

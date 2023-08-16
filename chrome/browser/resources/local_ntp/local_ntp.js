@@ -1051,7 +1051,7 @@ function setup_grid()
   grid.onDragEnd(function (items) {
       console.log('On Drag End Started');
       localStorage.storedItems = JSON.stringify([]);
-      Array.prototype.forEach.call(items, function (el) { add_to_storage(el); });
+      Array.prototype.forEach.call(items, function (el) { if (!el.className.includes('grid-idea')); add_to_storage(el); });
       window.setTimeout(function () { save_grid_snapshot(); }, 300);
       window.setTimeout(function () { save_grid_snapshot(); }, 800);
       // localStorage stores only strings
@@ -1088,6 +1088,32 @@ function setup_grid()
       localStorage.useCustomTiles = "true";
       console.log("Item removed");
   });
+
+  if (!document.areIdeasFetched && !window.chrome.embeddedSearch.newTabPage.isIncognito && typeof localStorage.hideExplore == "undefined") {
+    document.areIdeasFetched = true;
+    document.getElementById('explore-section').style.display = 'none';
+    console.log("Fetching tiles ideas");
+    fetch('https://tiles.kiwibrowser.org/ideas/?version=2&cachebuster=' + Math.random(), { method: 'GET' })
+        .then(function(response) {
+            console.log("We received tiles ideas");
+            return response.json();
+          })
+          .then(function(answer) {
+            for (var i = 0; i < answer.length; i++) {
+              add_favorite_idea(answer[i].name, answer[i].click_url, answer[i].impression_url, answer[i].image_url);
+            }
+            if (answer.length > 0)
+              document.getElementById('explore-section').style.display = 'block';
+            grid.appendNew();
+            swap_if_ready();
+            window.setTimeout(function () { swap_if_ready(); }, 10);
+            window.setTimeout(function () { swap_if_ready(); }, 100);
+            window.setTimeout(function () { swap_if_ready(); }, 200);
+            window.setTimeout(function () { swap_if_ready(); }, 400);
+            window.setTimeout(function () { swap_if_ready(); }, 800);
+            window.setTimeout(function () { save_grid_snapshot(); }, 900);
+          });
+   }
 }
 
 try {

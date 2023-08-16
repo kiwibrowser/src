@@ -5,10 +5,12 @@
 package org.chromium.ui.base;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.os.Build;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.style.CharacterStyle;
@@ -16,12 +18,18 @@ import android.text.style.ParagraphStyle;
 import android.text.style.UpdateAppearance;
 
 import org.chromium.base.ApiCompatibilityUtils;
+import org.chromium.base.BuildInfo;
 import org.chromium.base.ContextUtils;
+import org.chromium.base.StrictModeContext;
 import org.chromium.base.annotations.CalledByNative;
 import org.chromium.base.annotations.JNINamespace;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.ui.R;
 import org.chromium.ui.widget.Toast;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Simple proxy that provides C++ code with an access pathway to the Android clipboard.
@@ -36,6 +44,8 @@ public class Clipboard implements ClipboardManager.OnPrimaryClipChangedListener 
     private final Context mContext;
 
     private final ClipboardManager mClipboardManager;
+
+    private long mNativeClipboard;
 
     /**
      * Get the singleton Clipboard instance (creating it if needed).
@@ -168,13 +178,25 @@ public class Clipboard implements ClipboardManager.OnPrimaryClipChangedListener 
     }
 
     public void setPrimaryClipNoException(ClipData clip) {
-        try {
+        final String manufacturer = Build.MANUFACTURER.toLowerCase(Locale.US);
+        // See crbug.com/1123727, there are OEM devices having strict mode violations in their
+        // Android framework code. Disabling strict mode for non-google devices.
+        try (StrictModeContext ignored = manufacturer.equals("google")
+                        ? null
+                        : StrictModeContext.allowAllThreadPolicies()) {
             mClipboardManager.setPrimaryClip(clip);
+            return ;
         } catch (Exception ex) {
             // Ignore any exceptions here as certain devices have bugs and will fail.
             String text = mContext.getString(R.string.copy_to_clipboard_failure_message);
             Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
+            return ;
         }
+    }
+
+    @CalledByNative
+    private void setNativePtr(long nativeClipboard) {
+        mNativeClipboard = nativeClipboard;
     }
 
     /**
@@ -185,10 +207,29 @@ public class Clipboard implements ClipboardManager.OnPrimaryClipChangedListener 
     @Override
     public void onPrimaryClipChanged() {
         RecordUserAction.record("MobileClipboardChanged");
-        long nativeClipboardAndroid = nativeInit();
-        if (nativeClipboardAndroid != 0) nativeOnPrimaryClipChanged(nativeClipboardAndroid);
+        if (mNativeClipboard != 0) nativeOnPrimaryClipChanged(mNativeClipboard);
     }
 
-    private native long nativeInit();
+    /**
+     * Because Android may not notify apps in the background that the content of clipboard has
+     * changed, this method proactively considers clipboard invalidated, when the app loses focus.
+     * @param hasFocus Whether or not {@code activity} gained or lost focus.
+     */
+    public void onWindowFocusChanged(boolean hasFocus) {
+        if (mNativeClipboard == 0 || !hasFocus || !BuildInfo.isAtLeastQ()) return;
+        onPrimaryClipTimestampInvalidated();
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void onPrimaryClipTimestampInvalidated() {
+        ClipDescription clipDescription = mClipboardManager.getPrimaryClipDescription();
+        if (clipDescription == null) return;
+
+        long timestamp = clipDescription.getTimestamp();
+        nativeOnPrimaryClipTimestampInvalidated(mNativeClipboard, timestamp);
+    }
+
     private native void nativeOnPrimaryClipChanged(long nativeClipboardAndroid);
+    private native void nativeOnPrimaryClipTimestampInvalidated(
+            long nativeClipboardAndroid, long timestamp);
 }

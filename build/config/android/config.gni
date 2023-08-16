@@ -23,7 +23,8 @@ if (is_android || is_chromeos) {
                  ".gclient configuration file (in the parent directory of " +
                  "src) must include \"android\" and/or \"chromeos\". For " +
                  "example:${n}${n}solutions = [${n}...${n}]${n}" +
-                 "target_os=[\"chromeos\"]${n}")
+                 "target_os=[\"chromeos\"]${n}${n}" +
+                 "After adding |target_os| please re-run \"gclient sync\".${n}")
     }
   }
 
@@ -78,7 +79,7 @@ if (is_android || is_chromeos) {
 
   if (android_sdk_release == "o_mr1") {
     default_android_sdk_root = "//third_party/android_tools/sdk"
-    default_android_sdk_version = "27"
+    default_android_sdk_version = 27
     default_android_sdk_build_tools_version = "27.0.3"
     default_android_sdk_tools_version_suffix = "-26.0.0-dev"
     public_android_sdk = true
@@ -92,11 +93,19 @@ if (is_android || is_chromeos) {
     public_android_sdk = true
   }
 
+  if (android_sdk_release == "q") {
+    default_android_sdk_root = "//third_party/android_tools/sdk"
+    default_android_sdk_version = 29
+    default_android_sdk_build_tools_version = "27.0.3"
+    default_android_sdk_tools_version_suffix = "-26.0.0-dev"
+    public_android_sdk = true
+  }
+
   if (!defined(default_lint_android_sdk_root)) {
     # Purposefully repeated so that downstream can change
     # default_android_sdk_root without changing lint version.
     default_lint_android_sdk_root = "//third_party/android_tools/sdk"
-    default_lint_android_sdk_version = "26"
+    default_lint_android_sdk_version = 26
   }
 
   if (!defined(default_extras_android_sdk_root)) {
@@ -266,10 +275,6 @@ if (is_android || is_chromeos) {
 
   android_sdk =
       "${android_sdk_root}/platforms/android-${android_sdk_platform_version}"
-
-  # Path to the Android NDK and SDK.
-  android_ndk_include_dir = "$android_ndk_root/usr/include"
-
   android_sdk_tools = "${android_sdk_root}/tools"
   android_sdk_build_tools =
       "${android_sdk_root}/build-tools/$android_sdk_build_tools_version"

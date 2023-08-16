@@ -40,6 +40,7 @@ class AnswerTextBuilder {
     // Deprecated: ANSWERS_SUGGESTION_TEXT_POSITIVE_TYPE = 9;
     // Deprecated: ANSWERS_SUGGESTION_TEXT_NEGATIVE_TYPE = 10;
     // Deprecated: ANSWERS_SUGGESTION_LINK_COLOR_TYPE = 11;
+    private static final int ANSWERS_SUGGESTION_LINK_COLOR_TYPE = 11;
     // Deprecated: ANSWERS_STATUS_TEXT_TYPE = 12;
     private static final int ANSWERS_PERSONALIZED_SUGGESTION_TEXT_TYPE = 13;
     // Deprecated: ANSWERS_IMMERSIVE_DESCRIPTION_TEXT = 14;
@@ -78,15 +79,18 @@ class AnswerTextBuilder {
         // will be used to top-align text and scale images.
         int maxTextHeightSp = getMaxTextHeightSp(line);
 
+        // this corresponds to json field "t"
         List<SuggestionAnswer.TextField> textFields = line.getTextFields();
         for (int i = 0; i < textFields.size(); i++) {
             appendAndStyleText(builder, textFields.get(i), maxTextHeightSp, metrics, density);
         }
+        // this corresponds to json field "at"
         if (line.hasAdditionalText()) {
             builder.append("  ");
             SuggestionAnswer.TextField additionalText = line.getAdditionalText();
             appendAndStyleText(builder, additionalText, maxTextHeightSp, metrics, density);
         }
+        // this corresponds to json field "st"
         if (line.hasStatusText()) {
             builder.append("  ");
             SuggestionAnswer.TextField statusText = line.getStatusText();
@@ -193,6 +197,7 @@ class AnswerTextBuilder {
                 return ANSWERS_ANSWER_TEXT_LARGE_SIZE_SP;
             case ANSWERS_SECONDARY_TEXT_SMALL_TYPE:
                 return ANSWERS_SECONDARY_TEXT_SMALL_SIZE_SP;
+            case ANSWERS_SUGGESTION_LINK_COLOR_TYPE:
             case ANSWERS_SECONDARY_TEXT_MEDIUM_TYPE:
                 return ANSWERS_SECONDARY_TEXT_MEDIUM_SIZE_SP;
             default:
@@ -217,7 +222,12 @@ class AnswerTextBuilder {
                 return ApiCompatibilityUtils.getColor(
                         resources, R.color.answers_description_text_positive);
 
+            case ANSWERS_SUGGESTION_LINK_COLOR_TYPE:
+                return ApiCompatibilityUtils.getColor(resources, R.color.suggestion_url_dark_modern);
+
             case ANSWERS_SUGGESTION_TEXT_TYPE:
+                if (ContextUtils.getAppSharedPreferences().getBoolean("user_night_mode_enabled", false) || ContextUtils.getAppSharedPreferences().getString("active_theme", "").equals("Diamond Black"))
+                  return ApiCompatibilityUtils.getColor(resources, R.color.url_emphasis_light_default_text);
                 return ApiCompatibilityUtils.getColor(resources, R.color.url_emphasis_default_text);
 
             case ANSWERS_PERSONALIZED_SUGGESTION_TEXT_TYPE:

@@ -12,7 +12,7 @@
 namespace mojo {
 
 template <>
-struct COMPONENT_EXPORT(MOJO_BASE_MOJOM)
+struct COMPONENT_EXPORT(MOJO_BASE_SHARED_TRAITS)
     StructTraits<mojo_base::mojom::TimeDataView, base::Time> {
   static int64_t internal_value(const base::Time& time);
 
@@ -20,7 +20,7 @@ struct COMPONENT_EXPORT(MOJO_BASE_MOJOM)
 };
 
 template <>
-struct COMPONENT_EXPORT(MOJO_BASE_MOJOM)
+struct COMPONENT_EXPORT(MOJO_BASE_SHARED_TRAITS)
     StructTraits<mojo_base::mojom::TimeDeltaDataView, base::TimeDelta> {
   static int64_t microseconds(const base::TimeDelta& delta);
 
@@ -29,7 +29,7 @@ struct COMPONENT_EXPORT(MOJO_BASE_MOJOM)
 };
 
 template <>
-struct COMPONENT_EXPORT(MOJO_BASE_MOJOM)
+struct COMPONENT_EXPORT(MOJO_BASE_SHARED_TRAITS)
     StructTraits<mojo_base::mojom::TimeTicksDataView, base::TimeTicks> {
   static int64_t internal_value(const base::TimeTicks& time);
 

@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "base/android/library_loader/anchor_functions.h"
+#include "base/android/orderfile/orderfile_buildflags.h"
 #include "base/bits.h"
 #include "base/files/file.h"
 #include "base/format_macros.h"
@@ -27,6 +28,10 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "build/build_config.h"
+
+#if BUILDFLAG(ORDERFILE_INSTRUMENTATION)
+#include "base/android/orderfile/orderfile_instrumentation.h"
+#endif
 
 #if BUILDFLAG(SUPPORTS_CODE_ORDERING)
 
@@ -255,8 +260,8 @@ PrefetchStatus ForkAndPrefetch(bool ordered_only) {
 
 // static
 void NativeLibraryPrefetcher::ForkAndPrefetchNativeLibrary(bool ordered_only) {
-#if defined(CYGPROFILE_INSTRUMENTATION)
-  // Avoid forking with cygprofile instrumentation because the child process
+#if BUILDFLAG(ORDERFILE_INSTRUMENTATION)
+  // Avoid forking with orderfile instrumentation because the child process
   // would create a dump as well.
   return;
 #endif

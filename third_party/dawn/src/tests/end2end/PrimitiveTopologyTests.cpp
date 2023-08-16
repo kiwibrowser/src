@@ -16,9 +16,10 @@
 
 #include "common/Assert.h"
 #include "utils/ComboRenderPipelineDescriptor.h"
-#include "utils/DawnHelpers.h"
+#include "utils/WGPUHelpers.h"
 
-// Primitive topology tests work by drawing the following vertices with all the different primitive topology states:
+// Primitive topology tests work by drawing the following vertices with all the different primitive
+// topology states:
 // -------------------------------------
 // |                                   |
 // |        1        2        5        |
@@ -81,8 +82,8 @@
 // -------------------------------------
 //
 // Each of these different states is a superset of some of the previous states,
-// so for every state, we check any new added test locations that are not contained in previous states
-// We also check that the test locations of subsequent states are untouched
+// so for every state, we check any new added test locations that are not contained in previous
+// states We also check that the test locations of subsequent states are untouched
 
 constexpr static unsigned int kRTSize = 32;
 
@@ -91,11 +92,13 @@ struct TestLocation {
 };
 
 constexpr TestLocation GetMidpoint(const TestLocation& a, const TestLocation& b) noexcept {
-    return { (a.x + b.x) / 2, (a.y + b.y) / 2 };
+    return {(a.x + b.x) / 2, (a.y + b.y) / 2};
 }
 
-constexpr TestLocation GetCentroid(const TestLocation& a, const TestLocation& b, const TestLocation& c) noexcept {
-    return { (a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3 };
+constexpr TestLocation GetCentroid(const TestLocation& a,
+                                   const TestLocation& b,
+                                   const TestLocation& c) noexcept {
+    return {(a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3};
 }
 
 // clang-format off
@@ -134,152 +137,164 @@ constexpr static TestLocation kTriangleStripTestLocations[] = {
 
 constexpr static float kRTSizef = static_cast<float>(kRTSize);
 constexpr static float kVertices[] = {
-    2.f * (kPointTestLocations[0].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[0].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
-    2.f * (kPointTestLocations[1].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[1].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
-    2.f * (kPointTestLocations[2].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[2].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
-    2.f * (kPointTestLocations[3].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[3].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
-    2.f * (kPointTestLocations[4].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[4].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
-    2.f * (kPointTestLocations[5].x + 0.5f) / kRTSizef - 1.f, 2.f * (kPointTestLocations[5].y + 0.5f) / kRTSizef - 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[0].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[0].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[1].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[1].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[2].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[2].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[3].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[3].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[4].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[4].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
+    2.f * (kPointTestLocations[5].x + 0.5f) / kRTSizef - 1.f, -2.f * (kPointTestLocations[5].y + 0.5f) / kRTSizef + 1.0f, 0.f, 1.f,
 };
 // clang-format on
 
 class PrimitiveTopologyTest : public DawnTest {
-    protected:
-        void SetUp() override {
-            DawnTest::SetUp();
+  protected:
+    void SetUp() override {
+        DawnTest::SetUp();
 
-            renderPass = utils::CreateBasicRenderPass(device, kRTSize, kRTSize);
+        renderPass = utils::CreateBasicRenderPass(device, kRTSize, kRTSize);
 
-            vsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Vertex, R"(
+        vsModule = utils::CreateShaderModule(device, utils::SingleShaderStage::Vertex, R"(
                 #version 450
                 layout(location = 0) in vec4 pos;
                 void main() {
                     gl_Position = pos;
-                })"
-            );
+                    gl_PointSize = 1.0;
+                })");
 
-            fsModule = utils::CreateShaderModule(device, dawn::ShaderStage::Fragment, R"(
+        fsModule = utils::CreateShaderModule(device, utils::SingleShaderStage::Fragment, R"(
                 #version 450
                 layout(location = 0) out vec4 fragColor;
                 void main() {
                     fragColor = vec4(0.0, 1.0, 0.0, 1.0);
                 })");
 
-            vertexBuffer = utils::CreateBufferFromData(device, kVertices, sizeof(kVertices), dawn::BufferUsageBit::Vertex);
+        vertexBuffer = utils::CreateBufferFromData(device, kVertices, sizeof(kVertices),
+                                                   wgpu::BufferUsage::Vertex);
+    }
+
+    struct LocationSpec {
+        const TestLocation* locations;
+        size_t count;
+        bool include;
+    };
+
+    template <std::size_t N>
+    constexpr LocationSpec TestPoints(TestLocation const (&points)[N], bool include) noexcept {
+        return {points, N, include};
+    }
+
+    // Draw the vertices with the given primitive topology and check the pixel values of the test
+    // locations
+    void DoTest(wgpu::PrimitiveTopology primitiveTopology,
+                const std::vector<LocationSpec>& locationSpecs) {
+        utils::ComboRenderPipelineDescriptor descriptor(device);
+        descriptor.vertexStage.module = vsModule;
+        descriptor.cFragmentStage.module = fsModule;
+        descriptor.primitiveTopology = primitiveTopology;
+        descriptor.cVertexState.vertexBufferCount = 1;
+        descriptor.cVertexState.cVertexBuffers[0].arrayStride = 4 * sizeof(float);
+        descriptor.cVertexState.cVertexBuffers[0].attributeCount = 1;
+        descriptor.cVertexState.cAttributes[0].format = wgpu::VertexFormat::Float4;
+        descriptor.cColorStates[0].format = renderPass.colorFormat;
+
+        wgpu::RenderPipeline pipeline = device.CreateRenderPipeline(&descriptor);
+
+        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
+        {
+            wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass.renderPassInfo);
+            pass.SetPipeline(pipeline);
+            pass.SetVertexBuffer(0, vertexBuffer);
+            pass.Draw(6);
+            pass.EndPass();
         }
 
-        struct LocationSpec {
-            const TestLocation* locations;
-            size_t count;
-            bool include;
-        };
+        wgpu::CommandBuffer commands = encoder.Finish();
+        queue.Submit(1, &commands);
 
-        template <std::size_t N>
-        constexpr LocationSpec TestPoints(TestLocation const (&points)[N], bool include) noexcept {
-            return { points, N, include };
-        }
-
-        // Draw the vertices with the given primitive topology and check the pixel values of the test locations
-        void DoTest(dawn::PrimitiveTopology primitiveTopology, const std::vector<LocationSpec> &locationSpecs) {
-            utils::ComboRenderPipelineDescriptor descriptor(device);
-            descriptor.cVertexStage.module = vsModule;
-            descriptor.cFragmentStage.module = fsModule;
-            descriptor.primitiveTopology = primitiveTopology;
-            descriptor.cVertexInput.bufferCount = 1;
-            descriptor.cVertexInput.cBuffers[0].stride = 4 * sizeof(float);
-            descriptor.cVertexInput.cBuffers[0].attributeCount = 1;
-            descriptor.cVertexInput.cAttributes[0].format = dawn::VertexFormat::Float4;
-            descriptor.cColorStates[0]->format = renderPass.colorFormat;
-
-            dawn::RenderPipeline pipeline = device.CreateRenderPipeline(&descriptor);
-
-            static const uint64_t zeroOffset = 0;
-            dawn::CommandEncoder encoder = device.CreateCommandEncoder();
-            {
-                dawn::RenderPassEncoder pass = encoder.BeginRenderPass(
-                    &renderPass.renderPassInfo);
-                pass.SetPipeline(pipeline);
-                pass.SetVertexBuffers(0, 1, &vertexBuffer, &zeroOffset);
-                pass.Draw(6, 1, 0, 0);
-                pass.EndPass();
+        for (auto& locationSpec : locationSpecs) {
+            for (size_t i = 0; i < locationSpec.count; ++i) {
+                // If this pixel is included, check that it is green. Otherwise, check that it is
+                // black
+                RGBA8 color = locationSpec.include ? RGBA8::kGreen : RGBA8::kZero;
+                EXPECT_PIXEL_RGBA8_EQ(color, renderPass.color, locationSpec.locations[i].x,
+                                      locationSpec.locations[i].y)
+                    << "Expected (" << locationSpec.locations[i].x << ", "
+                    << locationSpec.locations[i].y << ") to be " << color;
             }
-
-            dawn::CommandBuffer commands = encoder.Finish();
-            queue.Submit(1, &commands);
-
-            for (auto& locationSpec : locationSpecs) {
-                for (size_t i = 0; i < locationSpec.count; ++i) {
-                    // If this pixel is included, check that it is green. Otherwise, check that it is black
-                    RGBA8 color = locationSpec.include ? RGBA8(0, 255, 0, 255) : RGBA8(0, 0, 0, 0);
-                    EXPECT_PIXEL_RGBA8_EQ(color, renderPass.color, locationSpec.locations[i].x, locationSpec.locations[i].y)
-                        << "Expected (" << locationSpec.locations[i].x << ", " << locationSpec.locations[i].y << ") to be " << color;
-                }
-            }
         }
+    }
 
-        utils::BasicRenderPass renderPass;
-        dawn::ShaderModule vsModule;
-        dawn::ShaderModule fsModule;
-        dawn::Buffer vertexBuffer;
+    utils::BasicRenderPass renderPass;
+    wgpu::ShaderModule vsModule;
+    wgpu::ShaderModule fsModule;
+    wgpu::Buffer vertexBuffer;
 };
 
 // Test Point primitive topology
 TEST_P(PrimitiveTopologyTest, PointList) {
-    DoTest(dawn::PrimitiveTopology::PointList, {
-        // Check that the points are drawn
-        TestPoints(kPointTestLocations, true),
+    DoTest(wgpu::PrimitiveTopology::PointList,
+           {
+               // Check that the points are drawn
+               TestPoints(kPointTestLocations, true),
 
-        // Check that line and triangle locations are untouched
-        TestPoints(kLineTestLocations, false),
-        TestPoints(kLineStripTestLocations, false),
-        TestPoints(kTriangleTestLocations, false),
-        TestPoints(kTriangleStripTestLocations, false),
-    });
+               // Check that line and triangle locations are untouched
+               TestPoints(kLineTestLocations, false),
+               TestPoints(kLineStripTestLocations, false),
+               TestPoints(kTriangleTestLocations, false),
+               TestPoints(kTriangleStripTestLocations, false),
+           });
 }
 
 // Test Line primitive topology
 TEST_P(PrimitiveTopologyTest, LineList) {
-    DoTest(dawn::PrimitiveTopology::LineList, {
-        // Check that lines are drawn
-        TestPoints(kLineTestLocations, true),
+    DoTest(wgpu::PrimitiveTopology::LineList,
+           {
+               // Check that lines are drawn
+               TestPoints(kLineTestLocations, true),
 
-        // Check that line strip and triangle locations are untouched
-        TestPoints(kLineStripTestLocations, false),
-        TestPoints(kTriangleTestLocations, false),
-        TestPoints(kTriangleStripTestLocations, false),
-    });
+               // Check that line strip and triangle locations are untouched
+               TestPoints(kLineStripTestLocations, false),
+               TestPoints(kTriangleTestLocations, false),
+               TestPoints(kTriangleStripTestLocations, false),
+           });
 }
 
 // Test LineStrip primitive topology
 TEST_P(PrimitiveTopologyTest, LineStrip) {
-    DoTest(dawn::PrimitiveTopology::LineStrip, {
-        // Check that lines are drawn
-        TestPoints(kLineTestLocations, true),
-        TestPoints(kLineStripTestLocations, true),
+    DoTest(wgpu::PrimitiveTopology::LineStrip, {
+                                                   // Check that lines are drawn
+                                                   TestPoints(kLineTestLocations, true),
+                                                   TestPoints(kLineStripTestLocations, true),
 
-        // Check that triangle locations are untouched
-        TestPoints(kTriangleTestLocations, false),
-        TestPoints(kTriangleStripTestLocations, false),
-    });
+                                                   // Check that triangle locations are untouched
+                                                   TestPoints(kTriangleTestLocations, false),
+                                                   TestPoints(kTriangleStripTestLocations, false),
+                                               });
 }
 
 // Test Triangle primitive topology
 TEST_P(PrimitiveTopologyTest, TriangleList) {
-    DoTest(dawn::PrimitiveTopology::TriangleList, {
-        // Check that triangles are drawn
-        TestPoints(kTriangleTestLocations, true),
+    DoTest(wgpu::PrimitiveTopology::TriangleList,
+           {
+               // Check that triangles are drawn
+               TestPoints(kTriangleTestLocations, true),
 
-        // Check that triangle strip locations are untouched
-        TestPoints(kTriangleStripTestLocations, false),
-    });
+               // Check that triangle strip locations are untouched
+               TestPoints(kTriangleStripTestLocations, false),
+           });
 }
 
 // Test TriangleStrip primitive topology
 TEST_P(PrimitiveTopologyTest, TriangleStrip) {
-    DoTest(dawn::PrimitiveTopology::TriangleStrip, {
-        TestPoints(kTriangleTestLocations, true),
-        TestPoints(kTriangleStripTestLocations, true),
-    });
+    DoTest(wgpu::PrimitiveTopology::TriangleStrip,
+           {
+               TestPoints(kTriangleTestLocations, true),
+               TestPoints(kTriangleStripTestLocations, true),
+           });
 }
 
-DAWN_INSTANTIATE_TEST(PrimitiveTopologyTest, D3D12Backend, MetalBackend, OpenGLBackend, VulkanBackend);
+DAWN_INSTANTIATE_TEST(PrimitiveTopologyTest,
+                      D3D12Backend(),
+                      MetalBackend(),
+                      OpenGLBackend(),
+                      VulkanBackend());

@@ -15,6 +15,9 @@
 #ifndef DAWNNATIVE_COMMAND_ALLOCATOR_H_
 #define DAWNNATIVE_COMMAND_ALLOCATOR_H_
 
+#include "common/Assert.h"
+#include "common/Math.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -56,6 +59,11 @@ namespace dawn_native {
     };
     using CommandBlocks = std::vector<BlockDef>;
 
+    namespace detail {
+        constexpr uint32_t kEndOfBlock = std::numeric_limits<uint32_t>::max();
+        constexpr uint32_t kAdditionalData = std::numeric_limits<uint32_t>::max() - 1;
+    }  // namespace detail
+
     class CommandAllocator;
 
     // TODO(cwallez@chromium.org): prevent copy for both iterator and allocator
@@ -91,15 +99,46 @@ namespace dawn_native {
       private:
         bool IsEmpty() const;
 
-        bool NextCommandId(uint32_t* commandId);
-        void* NextCommand(size_t commandSize, size_t commandAlignment);
-        void* NextData(size_t dataSize, size_t dataAlignment);
+        DAWN_FORCE_INLINE bool NextCommandId(uint32_t* commandId) {
+            uint8_t* idPtr = AlignPtr(mCurrentPtr, alignof(uint32_t));
+            ASSERT(idPtr + sizeof(uint32_t) <=
+                   mBlocks[mCurrentBlock].block + mBlocks[mCurrentBlock].size);
+
+            uint32_t id = *reinterpret_cast<uint32_t*>(idPtr);
+
+            if (id != detail::kEndOfBlock) {
+                mCurrentPtr = idPtr + sizeof(uint32_t);
+                *commandId = id;
+                return true;
+            }
+            return NextCommandIdInNewBlock(commandId);
+        }
+
+        bool NextCommandIdInNewBlock(uint32_t* commandId);
+
+        DAWN_FORCE_INLINE void* NextCommand(size_t commandSize, size_t commandAlignment) {
+            uint8_t* commandPtr = AlignPtr(mCurrentPtr, commandAlignment);
+            ASSERT(commandPtr + sizeof(commandSize) <=
+                   mBlocks[mCurrentBlock].block + mBlocks[mCurrentBlock].size);
+
+            mCurrentPtr = commandPtr + commandSize;
+            return commandPtr;
+        }
+
+        DAWN_FORCE_INLINE void* NextData(size_t dataSize, size_t dataAlignment) {
+            uint32_t id;
+            bool hasId = NextCommandId(&id);
+            ASSERT(hasId);
+            ASSERT(id == detail::kAdditionalData);
+
+            return NextCommand(dataSize, dataAlignment);
+        }
 
         CommandBlocks mBlocks;
         uint8_t* mCurrentPtr = nullptr;
         size_t mCurrentBlock = 0;
         // Used to avoid a special case for empty iterators.
-        uint32_t mEndOfBlock;
+        uint32_t mEndOfBlock = detail::kEndOfBlock;
         bool mDataWasDestroyed = false;
     };
 
@@ -140,18 +179,67 @@ namespace dawn_native {
         // using the CommandAllocator passes the static_asserts.
         static constexpr size_t kMaxSupportedAlignment = 8;
 
+        // To avoid checking for overflows at every step of the computations we compute an upper
+        // bound of the space that will be needed in addition to the command data.
+        static constexpr size_t kWorstCaseAdditionalSize =
+            sizeof(uint32_t) + kMaxSupportedAlignment + alignof(uint32_t) + sizeof(uint32_t);
+
         friend CommandIterator;
         CommandBlocks&& AcquireBlocks();
 
-        uint8_t* Allocate(uint32_t commandId, size_t commandSize, size_t commandAlignment);
-        uint8_t* AllocateData(size_t dataSize, size_t dataAlignment);
+        DAWN_FORCE_INLINE uint8_t* Allocate(uint32_t commandId,
+                                            size_t commandSize,
+                                            size_t commandAlignment) {
+            ASSERT(mCurrentPtr != nullptr);
+            ASSERT(mEndPtr != nullptr);
+            ASSERT(commandId != detail::kEndOfBlock);
+
+            // It should always be possible to allocate one id, for kEndOfBlock tagging,
+            ASSERT(IsPtrAligned(mCurrentPtr, alignof(uint32_t)));
+            ASSERT(mEndPtr >= mCurrentPtr);
+            ASSERT(static_cast<size_t>(mEndPtr - mCurrentPtr) >= sizeof(uint32_t));
+
+            // The memory after the ID will contain the following:
+            //   - the current ID
+            //   - padding to align the command, maximum kMaxSupportedAlignment
+            //   - the command of size commandSize
+            //   - padding to align the next ID, maximum alignof(uint32_t)
+            //   - the next ID of size sizeof(uint32_t)
+
+            // This can't overflow because by construction mCurrentPtr always has space for the next
+            // ID.
+            size_t remainingSize = static_cast<size_t>(mEndPtr - mCurrentPtr);
+
+            // The good case were we have enough space for the command data and upper bound of the
+            // extra required space.
+            if ((remainingSize >= kWorstCaseAdditionalSize) &&
+                (remainingSize - kWorstCaseAdditionalSize >= commandSize)) {
+                uint32_t* idAlloc = reinterpret_cast<uint32_t*>(mCurrentPtr);
+                *idAlloc = commandId;
+
+                uint8_t* commandAlloc = AlignPtr(mCurrentPtr + sizeof(uint32_t), commandAlignment);
+                mCurrentPtr = AlignPtr(commandAlloc + commandSize, alignof(uint32_t));
+
+                return commandAlloc;
+            }
+            return AllocateInNewBlock(commandId, commandSize, commandAlignment);
+        }
+
+        uint8_t* AllocateInNewBlock(uint32_t commandId,
+                                    size_t commandSize,
+                                    size_t commandAlignment);
+
+        DAWN_FORCE_INLINE uint8_t* AllocateData(size_t commandSize, size_t commandAlignment) {
+            return Allocate(detail::kAdditionalData, commandSize, commandAlignment);
+        }
+
         bool GetNewBlock(size_t minimumSize);
 
         CommandBlocks mBlocks;
         size_t mLastAllocationSize = 2048;
 
         // Pointers to the current range of allocation in the block. Guaranteed to allow for at
-        // least one uint32_t if not nullptr, so that the special EndOfBlock command id can always
+        // least one uint32_t if not nullptr, so that the special kEndOfBlock command id can always
         // be written. Nullptr iff the blocks were moved out.
         uint8_t* mCurrentPtr = nullptr;
         uint8_t* mEndPtr = nullptr;

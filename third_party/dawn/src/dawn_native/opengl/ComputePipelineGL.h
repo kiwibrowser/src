@@ -19,17 +19,20 @@
 
 #include "dawn_native/opengl/PipelineGL.h"
 
-#include "glad/glad.h"
+#include "dawn_native/opengl/opengl_platform.h"
 
 namespace dawn_native { namespace opengl {
 
     class Device;
 
-    class ComputePipeline : public ComputePipelineBase, public PipelineGL {
+    class ComputePipeline final : public ComputePipelineBase, public PipelineGL {
       public:
         ComputePipeline(Device* device, const ComputePipelineDescriptor* descriptor);
 
         void ApplyNow();
+
+      private:
+        ~ComputePipeline() override = default;
     };
 
 }}  // namespace dawn_native::opengl

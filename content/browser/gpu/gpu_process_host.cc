@@ -1086,6 +1086,9 @@ void GpuProcessHost::OnProcessLaunchFailed(int error_code) {
 }
 
 void GpuProcessHost::OnProcessCrashed(int exit_code) {
+  // Record crash before doing anything that could start a new GPU process.
+  RecordProcessCrash();
+
   // If the GPU process crashed while compiling a shader, we may have invalid
   // cached binaries. Completely clear the shader cache to force shader binaries
   // to be re-created.
@@ -1101,7 +1104,6 @@ void GpuProcessHost::OnProcessCrashed(int exit_code) {
     }
   }
   SendOutstandingReplies(EstablishChannelStatus::GPU_HOST_INVALID);
-  RecordProcessCrash();
 
   ChildProcessTerminationInfo info =
       process_->GetTerminationInfo(true /* known_dead */);
@@ -1139,7 +1141,8 @@ void GpuProcessHost::DidFailInitialize() {
   UMA_HISTOGRAM_BOOLEAN("GPU.GPUProcessInitialized", false);
   status_ = FAILURE;
   GpuDataManagerImpl* gpu_data_manager = GpuDataManagerImpl::GetInstance();
-  gpu_data_manager->FallBackToNextGpuMode();
+  if (kind_ == GPU_PROCESS_KIND_SANDBOXED)
+    gpu_data_manager->FallBackToNextGpuMode();
   RunRequestGPUInfoCallbacks(gpu_data_manager->GetGPUInfo());
 }
 

@@ -12,6 +12,7 @@ namespace prefs {
 extern const char kLastKnownGoogleURL[];
 extern const char kLastPromptedGoogleURL[];
 extern const char kLastKnownSearchVersion[];
+extern const char kEnableServerSuggestions[];
 
 }  // namespace prefs
 

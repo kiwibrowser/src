@@ -54,12 +54,14 @@ class ClipboardMap {
  public:
   ClipboardMap();
   void SetModifiedCallback(ClipboardAndroid::ModifiedCallback cb);
+  void SetJavaSideNativePtr(Clipboard* clipboard);
   std::string Get(const std::string& format);
   uint64_t GetSequenceNumber() const;
   base::Time GetLastModifiedTime() const;
   void ClearLastModifiedTime();
   bool HasFormat(const std::string& format);
   void OnPrimaryClipboardChanged();
+  void OnPrimaryClipTimestampInvalidated(int64_t timestamp_ms);
   void Set(const std::string& format, const std::string& data);
   void CommitToAndroidClipboard();
   void Clear();
@@ -103,6 +105,12 @@ void ClipboardMap::SetModifiedCallback(ClipboardAndroid::ModifiedCallback cb) {
   modified_cb_ = std::move(cb);
 }
 
+void ClipboardMap::SetJavaSideNativePtr(Clipboard* clipboard) {
+  JNIEnv* env = AttachCurrentThread();
+  Java_Clipboard_setNativePtr(env, clipboard_manager_,
+                              reinterpret_cast<intptr_t>(clipboard));
+}
+
 std::string ClipboardMap::Get(const std::string& format) {
   base::AutoLock lock(lock_);
   UpdateFromAndroidClipboard();
@@ -132,6 +140,15 @@ void ClipboardMap::OnPrimaryClipboardChanged() {
   sequence_number_++;
   UpdateLastModifiedTime(base::Time::Now());
   map_state_ = MapState::kOutOfDate;
+}
+
+void ClipboardMap::OnPrimaryClipTimestampInvalidated(int64_t timestamp_ms) {
+  base::Time timestamp = base::Time::FromJavaTime(timestamp_ms);
+  if (GetLastModifiedTime() < timestamp) {
+    sequence_number_++;
+    UpdateLastModifiedTime(timestamp);
+    map_state_ = MapState::kOutOfDate;
+  }
 }
 
 void ClipboardMap::Set(const std::string& format, const std::string& data) {
@@ -335,6 +352,13 @@ void ClipboardAndroid::OnPrimaryClipChanged(
   g_map.Get().OnPrimaryClipboardChanged();
 }
 
+void ClipboardAndroid::OnPrimaryClipTimestampInvalidated(
+    JNIEnv* env,
+    const base::android::JavaParamRef<jobject>& obj,
+    const jlong j_timestamp_ms) {
+  g_map.Get().OnPrimaryClipTimestampInvalidated(j_timestamp_ms);
+}
+
 void ClipboardAndroid::SetModifiedCallback(ModifiedCallback cb) {
   g_map.Get().SetModifiedCallback(std::move(cb));
 }
@@ -346,6 +370,7 @@ void ClipboardAndroid::SetLastModifiedTimeWithoutRunningCallback(
 
 ClipboardAndroid::ClipboardAndroid() {
   DCHECK(CalledOnValidThread());
+  g_map.Get().SetJavaSideNativePtr(this);
 }
 
 ClipboardAndroid::~ClipboardAndroid() {
@@ -549,13 +574,6 @@ void ClipboardAndroid::WriteData(const Clipboard::FormatType& format,
                                  const char* data_data,
                                  size_t data_len) {
   g_map.Get().Set(format.ToString(), std::string(data_data, data_len));
-}
-
-// Returns a pointer to the current ClipboardAndroid object.
-static jlong JNI_Clipboard_Init(
-    JNIEnv* env,
-    const base::android::JavaParamRef<jobject>& obj) {
-  return reinterpret_cast<intptr_t>(Clipboard::GetForCurrentThread());
 }
 
 } // namespace ui

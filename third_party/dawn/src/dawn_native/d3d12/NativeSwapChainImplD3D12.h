@@ -34,18 +34,19 @@ namespace dawn_native { namespace d3d12 {
         ~NativeSwapChainImpl();
 
         void Init(DawnWSIContextD3D12* context);
-        DawnSwapChainError Configure(DawnTextureFormat format,
-                                     DawnTextureUsageBit,
+        DawnSwapChainError Configure(WGPUTextureFormat format,
+                                     WGPUTextureUsage,
                                      uint32_t width,
                                      uint32_t height);
         DawnSwapChainError GetNextTexture(DawnSwapChainNextTexture* nextTexture);
         DawnSwapChainError Present();
 
-        dawn::TextureFormat GetPreferredFormat() const;
+        wgpu::TextureFormat GetPreferredFormat() const;
 
       private:
         HWND mWindow = nullptr;
         Device* mDevice = nullptr;
+        UINT mInterval;
 
         ComPtr<IDXGISwapChain3> mSwapChain = nullptr;
         std::vector<ComPtr<ID3D12Resource>> mBuffers;

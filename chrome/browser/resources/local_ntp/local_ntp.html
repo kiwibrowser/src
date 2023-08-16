@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-<!-- Copyright 2018-2019 Kiwi Browser -->
+<!-- Copyright 2018-2021 Kiwi Browser -->
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#ffffff">
@@ -186,9 +186,6 @@ function locale_to_readabletext(string)
     </tr></tbody></table>
 </div>
 </div>
-    <div style="position: absolute; top: 0px; right: 5px; z-index: 99999999">
-    <div class="plus-item" role="button" aria-label="Add new tile" title="Add new tile" id="add-button">+</div>
-    </div>
 <script>
 if (window.chrome.embeddedSearch.newTabPage.isIncognito)
 {
@@ -245,10 +242,24 @@ if (window.chrome.embeddedSearch.newTabPage.isIncognito)
   display: none;
 }
 </style>
+    <div style="position: absolute; top: 0px; right: 5px; z-index: 99999999">
+    <div class="plus-item" role="button" aria-label="Add new tile" title="Add new tile" id="add-button">+</div>
+    </div>
     <div id="fake-bookmarks-grid" style="display: none">
     </div>
     <div id="bookmarks-grid" class="full-hidden">
     </div>
+<span id="explore-section" style="display: none">
+<div style="clear: both;"></div>
+<div class="configure-item-explore">
+<!-- <div class="arrow-down" style="float: right;"></div>--> <span id="explore-title">Explore</span>
+</div>
+<div class="close-item" role="button" aria-label="Close explore" title="Close explore" id="close-explore-button">x</div>
+<div style="clear: both;"></div>
+    <div id="ideas-grid">
+    </div>
+<div style="clear: both; height: 1px;"></div>
+</span>
 <div id="incognito" style="display: none;width: 100%;height: 100%;background:black;">
 <div style="text-align: center;padding-top:50px;">
 <img style="width: 64px;border-radius: 50%"
@@ -397,6 +408,8 @@ function render_gnews(answer, start_offset, n)
                               news_time = child.childNodes[0].childNodes[0].dateTime;
                           else if (child.childNodes[0].childNodes[1].tagName == 'TIME')
                               news_time = child.childNodes[0].childNodes[1].dateTime;
+                          if (child.childNodes[0].childNodes.length == 3 && child.childNodes[0].childNodes[2].tagName == 'TIME')
+                              news_time = child.childNodes[0].childNodes[2].dateTime;
                       }
                       else if (child.childNodes.length >= 2 && child.childNodes[0].tagName == 'DIV')
                       {
@@ -444,6 +457,21 @@ function render_gnews(answer, start_offset, n)
                           if (child.childNodes[1].innerText)
                             source = child.childNodes[1].innerText;
                         }
+                        if (child.childNodes.length == 3) {
+                          if (child.childNodes[0].tagName == 'SOURCE' && child.childNodes[1].tagName == 'SOURCE' && child.childNodes[2].tagName == 'A') {
+                            source_logo = child.childNodes[0].src;
+                            if (child.childNodes[2].innerText)
+                              source = child.childNodes[2].innerText;
+                          }
+                        }
+                        if (child.childNodes.length == 4) {
+                          if (child.childNodes[0].tagName == 'SOURCE' && child.childNodes[1].tagName == 'SOURCE'
+                           && child.childNodes[2].tagName == 'SOURCE' && child.childNodes[3].tagName == 'A') {
+                            source_logo = child.childNodes[0].src;
+                            if (child.childNodes[3].innerText)
+                              source = child.childNodes[3].innerText;
+                          }
+                        }
                       } else if (child.childNodes.length == 1 && child.childNodes[0].tagName == 'A')
                       {
                           subNode = child.childNodes[0];
@@ -471,13 +499,37 @@ function render_gnews(answer, start_offset, n)
                        }
                   }
               }
-
+              try {
+                if (link == null)
+                    link = article.querySelector("a.VDXfz").href;
+              } catch {}
+              try {
+                if (title == null)
+                    title = article.querySelector("h4 a.DY5T1d").innerHTML;
+              } catch {}
+              try {
+                if (image == null)
+                    image = article.querySelector(".QwxBBf").src;
+              } catch {}
+              try {
+                if (source == null)
+                    source = article.querySelector("a.wEwyrc").innerHTML;
+              } catch {}
+              try {
+                if (source_logo == null)
+                    source_logo = article.querySelector(".wsLqz source").src;
+              } catch {}
+              try {
+                if (news_time == null || news_time == 0)
+                    news_time = article.querySelector(".WW6dff").getAttribute("datetime");
+              } catch {}
               if (news_time && parseInt(news_time.substr(news_time.lastIndexOf(":") + 2)) > 1518000000)
                   news_time = parseInt(news_time.substr(news_time.lastIndexOf(":") + 2));
               else
                   news_time = parseInt(Date.parse(news_time) / 1000);
               if (link)
                   link = link.replace('chrome-search://local-ntp/', 'https://news.google.com/');
+            
               if (link && image && title) {
 //                  console.log('Title: ' + title);
                   add_gnews(is_primary, title, news_time, source, source_logo, link, image);
@@ -586,6 +638,7 @@ function invalidate_image(item)
   console.log("Invalidating rootDomain: " + rootDomain);
   item.src = "data:image/svg+xml;base64," + btoa(jdenticon.toSvg(parser.hostname, 64));
   localStorage.setItem('icon-' + rootDomain, item.src);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
 }
 
 function remove_favorite(e)
@@ -600,6 +653,48 @@ function remove_favorite(e)
 
 var nItemsAdded = 0;
 
+function add_favorite_idea(name, click_url, impression_url, image_url)
+{
+  var rootDomain = 'idea-' + name;
+  var innerDiv = document.createElement('div');
+  innerDiv.className = 'grid-item grid-idea';
+  var cachedImage = localStorage.getItem('icon-' + rootDomain);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+  var imageUri = null;
+  var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
+  if (cachedImage != null) {
+    imageUri = cachedImage;
+    console.log('Loading icon for ' + rootDomain + ' from cache');
+  } else {
+      console.log('Fetching icon for ' + rootDomain);
+      loadingImage = "data:image/svg+xml;base64," + btoa('<svg width="85px"  height="85px"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="lds-tail">    <defs>      <filter id="tail-0.a4db4fdd84ecd" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">        <feGaussianBlur in="SourceGraphic" stdDeviation="3"></feGaussianBlur>        <feColorMatrix mode="matrix" values="1 0 0 0 0   0 1 0 0 0   0 0 1 0 0   0 0 0 60 -40" result="cm"></feColorMatrix>      </filter>    </defs>    <g ng-attr-filter="url(#{{config.filterid}})" filter="url(#tail-0.a4db4fdd84ecd)" transform="rotate(54 50 50)">      <animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;360 50 50" keyTimes="0;1" dur="4s" begin="0s" repeatCount="indefinite"></animateTransform>      <g transform="rotate(333.474 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="19" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.13333333333333333 0 0.03333333333333333 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(331.178 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="18" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.16666666666666669 0 0.06666666666666667 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(328.576 50.0001 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="17" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.2 0 0.1 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(325.612 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="16" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.23333333333333334 0 0.13333333333333333 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(322.212 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="15" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.26666666666666666 0 0.16666666666666666 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(318.287 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="14" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.30000000000000004 0 0.2 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(314.708 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="13" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.33333333333333337 0 0.23333333333333334 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(309.018 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="12" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.3666666666666667 0 0.26666666666666666 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(302.443 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="11" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.4 0 0.3 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(294.767 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="10" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.43333333333333335 0 0.3333333333333333 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(285.715 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="9" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.4666666666666667 0 0.36666666666666664 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(274.96 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="8" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.5 0 0.4 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(263.29 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="7" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.5333333333333333 0 0.43333333333333335 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(247.243 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="6" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.5666666666666667 0 0.4666666666666667 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(233.28 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="5" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.6 0 0.5 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(210.448 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="4" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.6333333333333333 0 0.5333333333333333 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(189.723 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="3" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.6666666666666666 0 0.5666666666666667 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(167.547 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="2" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.7 0 0.6 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(151.39 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="1" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.7333333333333333 0 0.6333333333333333 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>      <g transform="rotate(134.242 50 50)">        <g ng-attr-transform="translate(50 {{config.cy}})" transform="translate(50 19.6)">          <circle cx="0" cy="0" r="0" ng-attr-fill="{{config.fill}}" ng-attr-transform="scale({{config.scale}})" fill="#ff7c81" transform="scale(0.48)"></circle>        </g>        <animateTransform attributeName="transform" calcMode="spline" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" ng-attr-dur="{{config.speed2}}" keySplines="0.7666666666666666 0 0.6666666666666666 1" repeatCount="indefinite" dur="1"></animateTransform>      </g>    </g>  </svg>');
+      imageUri = loadingImage;
+try {
+      fetch(image_url).then(function(response) {
+        return response.arrayBuffer();
+      })
+      .then(function(answer) {
+        localStorage.setItem('icon-' + rootDomain, 'data:image/png;base64,' + arrayBufferToBase64(answer));
+        localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
+        document.getElementById('icon' + randomId).src = 'data:image/png;base64,' + arrayBufferToBase64(answer);
+        console.log('Icon for ' + rootDomain + ' is now fetched');
+      });
+} catch (err) {
+      console.log('Fetch failed for: ' + err.message);
+}
+  }
+  if (impression_url && impression_url != 'about:blank')
+    navigator.sendBeacon(impression_url);
+  innerDiv.innerHTML = '<a id="tile_target" href="' + click_url + '"><img border="0" class="grid-image" title="' + name + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="64" style="max-height: 64px; border-radius: 4px;" /><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block">' + name + '</span></a>';
+  innerDiv.style.minHeight = '64px';
+
+//  innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
+//  innerDiv.querySelector('#tile_target').addEventListener("touchstart", process_start);
+  document.body.addEventListener("click", process_body_click);
+//  innerDiv.querySelector('#tile_target').addEventListener("touchend", process_cancel);
+  document.getElementById('ideas-grid').appendChild(innerDiv);
+}
+
 function add_favorite(item)
 {
   var parser = document.createElement('a');
@@ -610,6 +705,7 @@ function add_favorite(item)
   var innerDiv = document.createElement('div');
   innerDiv.className = 'grid-item';
   var cachedImage = localStorage.getItem('icon-' + rootDomain);
+  localStorage.setItem('lastShown-' + rootDomain, Math.floor(Date.now() / 1000));
   var imageUri = null;
   var randomId = Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9) + Math.random().toString(36).substr(2, 9);
   if (nItemsAdded++ < 10) {
@@ -638,7 +734,7 @@ try {
       console.log('Fetch failed for: ' + err.message);
 }
   }
-  innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><img border="0" class="grid-image" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="64" style="max-height: 64px; border-radius: 4px;" /><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block">' + rootDomain + '</span></a>';
+  innerDiv.innerHTML = '<img id="closeImg" src="' + closeImg + '" class="closeImg closeImgInvisible" height="20" width="20" style="position: absolute; right: 0px; border: 0px;" /><a id="tile_target" href="' + item.url + '"><img border="0" class="grid-image serverIdea" title="' + item.url + '" src="' + imageUri + '" id="icon' + randomId + '" onError="invalidate_image(this)" width="64" style="max-height: 64px; border-radius: 4px;" /><span style="width: 60px; line-height: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block">' + rootDomain + '</span></a>';
   innerDiv.style.minHeight = '64px';
 
   innerDiv.querySelector('#closeImg').addEventListener("touchstart", remove_favorite);
@@ -650,6 +746,7 @@ try {
 
 var globalGrid = false;
 var bookmarksGrid = document.getElementById("bookmarks-grid");
+var ideasGrid = document.getElementById("ideas-grid");
 
 function save_grid_snapshot()
 {
@@ -657,7 +754,12 @@ function save_grid_snapshot()
     return ;
   // Maximum 1 update per 0.1s (100ms)
   if ((typeof localStorage.cachedGridUpdate == "undefined") || ((Date.now() / 1000) - localStorage.cachedGridUpdate) >= 0.1) {
-    localStorage.cachedGrid = document.getElementById('bookmarks-grid').innerHTML;
+    var parser = document.createElement('span');
+    parser.innerHTML = document.getElementById('bookmarks-grid').innerHTML;
+    var elementsToIgnore = parser.getElementsByClassName('grid-idea');
+    for (var i = 0; i < elementsToIgnore.length; i++)
+      elementsToIgnore[i].remove();
+    localStorage.cachedGrid = parser.innerHTML;
     localStorage.cachedGridStyle = document.getElementById('bookmarks-grid').style.cssText;
 //    console.log("Saving grid snapshot and style is " + localStorage.cachedGridStyle);
     localStorage.cachedGridUpdate = (Date.now() / 1000);
@@ -716,12 +818,12 @@ function toggle_edit_mode()
   if (globalGrid.isDragifierOn()) {
     iseditable = false;
     globalGrid.dragifierOff();
-    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { el.style.WebkitAnimation = 'none'; });
+    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { if (!el.classList.contains('grid-idea')) { el.style.WebkitAnimation = 'none'; } });
     Array.prototype.forEach.call(document.getElementsByClassName('closeImg'), function (el) { el.classList.add('closeImgInvisible'); });
   } else {
     iseditable = true;
     globalGrid.dragifierOn();
-    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { el.style.WebkitAnimation = 'shadow-inset-center 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both'; });
+    Array.prototype.forEach.call(document.getElementsByClassName("grid-item"), function (el) { if (!el.classList.contains('grid-idea')) { el.style.WebkitAnimation = 'shadow-inset-center 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both'; } });
     Array.prototype.forEach.call(document.getElementsByClassName('closeImg'), function (el) { el.classList.remove('closeImgInvisible'); });
   }
   window.setTimeout(function () { save_grid_snapshot(); }, 100);
@@ -737,7 +839,7 @@ function select_locale(locale)
 
 function configure_news()
 {
-  document.getElementById("localDropdown").classList.toggle('show');
+  document.getElementById("localeDropdown").classList.toggle('show');
   var buf = '<ul class="localesList">';
   for (var locale in locales)
   {
@@ -747,7 +849,7 @@ function configure_news()
         buf += '<li class="localesListUnselected"><a href="#" onClick="javascript:select_locale(\'' + locale + '\'); return false">' + locale + '</a></li>';
   }
   buf += '</ul>';
-  document.getElementById("localDropdown").innerHTML = buf;
+  document.getElementById("localeDropdown").innerHTML = buf;
 }
 
 window.onclick = function(event) {
@@ -761,6 +863,15 @@ window.onclick = function(event) {
       }
     }
   }
+}
+
+function close_explore()
+{
+  localStorage.hideExplore = true;
+  document.getElementById('explore-section').style.display='none';
+  document.getElementById('close-explore-button').style.display='none';
+  document.getElementById('enable-explore-button').style.display='inline-block';
+  document.getElementById('enable-explore-button').addEventListener('click', enable_explore);
 }
 
 function close_news()
@@ -812,12 +923,18 @@ function create_new_item()
 <div class="configure-item dropbtn" role="button" aria-label="Choose news region" title="Choose news region" id="configure-button"><div class="arrow-down" style="float: right;"></div> <span id="locale"></span></div>
 <div class="close-item" role="button" aria-label="Close news" title="Close news" id="close-button">x</div>
 <br />
-  <div id="localDropdown" class="dropdown-content">
+  <div id="localeDropdown" class="dropdown-content">
   </div>
 <div id="newsHeader" style="display: none;"></div>
 <div id="news"></div>
 <div id="newsMore"></div>
 <script>
+if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.hideExplore != "undefined") {
+  document.getElementById('explore-section').style.display='none';
+} else {
+  if (document.getElementById('close-explore-button'))
+    document.getElementById('close-explore-button').addEventListener('click', close_explore);
+}
 if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.hideNews != "undefined") {
   document.getElementById('news').style.display='none';
   document.getElementById('newsMore').style.display='none';
@@ -829,9 +946,12 @@ if (window.chrome.embeddedSearch.newTabPage.isIncognito || typeof localStorage.h
   } else if (localStorage.newsLocale != '') {
       document.getElementById('locale').innerHTML = locale_to_readabletext(localStorage.newsLocale);
   }
-  document.getElementById('configure-button').addEventListener('click', configure_news);
-  document.getElementById('close-button').addEventListener('click', close_news);
-  document.getElementById('newsMore').addEventListener('click', load_more_news);
+  if (document.getElementById('configure-button'))
+    document.getElementById('configure-button').addEventListener('click', configure_news);
+  if (document.getElementById('close-button'))
+    document.getElementById('close-button').addEventListener('click', close_news);
+  if (document.getElementById('newsMore'))
+    document.getElementById('newsMore').addEventListener('click', load_more_news);
   preconnectTo('https://news.google.com');
 }
 
@@ -901,7 +1021,7 @@ if (!news_are_already_onscreen) {
       localStorage.lastOffsetRendered = 0;
       render_news_loading();
 }
-      await fetch('https://news.google.com/' + localStorage.newsLocale, { method: 'GET', credentials: 'include' })
+      await fetch('https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFZxYUdjU0FtVnVHZ0pWVXlnQVAB' + localStorage.newsLocale, { method: 'GET', credentials: 'include' })
         .then(function(response) {
           if (response.url.includes("&ceid=")) {
 //            console.log('Gnews: Detected ceid (standard)');
@@ -1019,6 +1139,7 @@ get_news();
 <div id="bottom_panel" style="text-align: center; width: 100%; visibility: hidden">
 <input type="file" name="import-file" id="import-file" style="opacity: 0;position: absolute;z-index: -1;">
 <span style="text-align: center; color: #cccccc; padding-right: 10px" id="enable-news-button">Show news</span>
+<span style="text-align: center; color: #cccccc; padding-right: 10px" id="enable-explore-button">Show explore</span>
 <label for="import-file"><span style="text-align: center; color: #cccccc; padding-right: 10px" id="import-button">Import</span></label>
 <span style="text-align: center; color: #cccccc; padding-right: 10px" id="export-button">Export</span>
 <span style="text-align: center; color: #cccccc; padding-right: 10px" id="reset-button">Reset</span>
@@ -1028,6 +1149,11 @@ get_news();
 function enable_news()
 {
   localStorage.removeItem('hideNews');
+  location.reload();
+}
+function enable_explore()
+{
+  localStorage.removeItem('hideExplore');
   location.reload();
 }
 function reset_page()
@@ -1051,6 +1177,7 @@ else
 {
   document.getElementById('bottom_panel').style.visibility='visible';
   document.getElementById('enable-news-button').addEventListener('click', enable_news);
+  document.getElementById('enable-explore-button').addEventListener('click', enable_explore);
   document.getElementById('reset-button').addEventListener('click', reset_page);
   document.getElementById('export-button').onclick = function(){
     var localStorageCopy = JSON.parse(JSON.stringify(localStorage));
@@ -1094,10 +1221,48 @@ else
 if (typeof localStorage.hideNews == "undefined") {
   document.getElementById('enable-news-button').style.display='none';
 }
+if (typeof localStorage.hideExplore == "undefined") {
+  document.getElementById('enable-explore-button').style.display='none';
+}
 </script>
 <br />&nbsp;<br />
 <script>
 <include src="./local_ntp.js">
+</script>
+<script>
+function cleanUpOldTilesIdeas() {
+  var values = Object.values(localStorage),
+       keys = Object.keys(localStorage),
+       i = keys.length;
+    while ( i-- ) {
+      if (keys[i].startsWith('lastShown-idea-')) {
+        var tile_name = keys[i].substring('lastShown-idea-'.length);
+        var difference = Math.floor(Date.now() / 1000) - parseInt(localStorage[keys[i]]);
+        if (difference > (86400 * 7)) {
+          console.log('Dropping tile idea: ' + keys[i]);
+          delete localStorage[keys[i]];
+          delete localStorage['icon-idea-' + tile_name];
+        }
+      }
+    }
+}
+function cleanUpOldTiles() {
+  var values = Object.values(localStorage),
+       keys = Object.keys(localStorage),
+       i = keys.length;
+    while ( i-- ) {
+      if (keys[i].startsWith('lastShown-') && !keys[i].startsWith('lastShown-idea-')) {
+        var tile_name = keys[i].substring('lastShown-'.length);
+        var difference = Math.floor(Date.now() / 1000) - parseInt(localStorage[keys[i]]);
+        if (difference > (86400 * 7)) {
+          console.log('Dropping tile: ' + keys[i]);
+          delete localStorage[keys[i]];
+          delete localStorage['icon-' + tile_name];
+        }
+      }
+    }
+}
+window.setTimeout(function () { cleanUpOldTilesIdeas(); cleanUpOldTiles(); }, 3000);
 </script>
 </body>
 </html>
