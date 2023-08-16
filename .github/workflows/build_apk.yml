@@ -211,10 +211,27 @@ jobs:
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
+      - name: Compiling source-code (content/public/common)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} content/public/common
+
       - name: Uploading binary objects to cache
         if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
 
+      - name: Compiling source-code (content/public/browser)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} content/public/browser
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+
+      - name: Compiling source-code (components/guest_view/common)
+        run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/guest_view/common
+
+      - name: Uploading binary objects to cache
+        if: ${{ github.repository_owner == 'kiwibrowser' }}
+        run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser-ccache-${{ matrix.platform }}/
+      
       - name: Compiling source-code (components/guest_view/renderer)
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} components/guest_view/renderer
 
