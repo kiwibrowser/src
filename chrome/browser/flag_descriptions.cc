@@ -2404,6 +2404,11 @@ const char kSiteExplorationUiName[] = "Site Exploration UI";
 const char kSiteExplorationUiDescription[] =
     "Show site suggestions in the Exploration UI";
 
+const char kUseClientCertName[] = "Use Client Certificates";
+const char kUseClientCertDescription[] =
+    "When enabled, the system's client certificate selection dialog will be "
+	"shown when a https request requires client authentication";
+
 const char kUpdateMenuBadgeName[] = "Force show update menu badge";
 const char kUpdateMenuBadgeDescription[] =
     "When enabled, an update badge will be shown on the app menu button.";
