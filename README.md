@@ -11,7 +11,7 @@ Kiwi is based on Chromium. Easily switch to Kiwi without having to painstakingly
 Among other functionalities, Kiwi Browser supports:
 
  - Night Mode (another implementation than Chromium)
- - Support for Chrome Extensions
+ - Chrome Extensions
  - Bottom address bar
 It also includes performance improvements (partial rasterization of tiles, etc)
 
